@@ -1,4 +1,4 @@
-You can view my mod on [https://thunderstore.io/c/lethal-company/p/FlipMods/ReservedItemSlotCore/](Thunderstore).
+You can view my mod on [Thunderstore](https://thunderstore.io/c/lethal-company/p/FlipMods/ReservedItemSlotCore/).
 
 For instructions on API usage, please refer to the mod description.
 
