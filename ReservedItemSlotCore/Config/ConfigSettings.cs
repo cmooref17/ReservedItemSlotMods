@@ -9,6 +9,7 @@ namespace ReservedItemSlotCore.Config
     public static class ConfigSettings
     {
         public static ConfigEntry<bool> disablePurchasingReservedSlots;
+        public static ConfigEntry<float> globalItemSlotPriceModifier;
         public static ConfigEntry<bool> forceEnableThisModIfNotEnabledOnHost;
         public static ConfigEntry<bool> displayNegativePrioritySlotsLeftSideOfScreen;
         public static ConfigEntry<string> focusReservedHotbarHotkey;
@@ -22,6 +23,7 @@ namespace ReservedItemSlotCore.Config
             Plugin.Log("BindingConfigs");
 
             disablePurchasingReservedSlots = AddConfigEntry(Plugin.instance.Config.Bind("Server", "DisablePurchasingReservedSlots", false, "[Host only] By default, you will have to unlock reserved item slots by purchasing them from the terminal. Setting this to true will disable this, and players will start the game with all available reserved item slots."));
+            globalItemSlotPriceModifier = AddConfigEntry(Plugin.instance.Config.Bind("Server", "GlobalItemSlotPriceModifier", 1f, "[Host only] All reserved item slot prices will scale with this value."));
             forceEnableThisModIfNotEnabledOnHost = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ForceEnableThisModIfNotEnabledOnHost", false, "This is disabled by default for a reason, and it is NOT recommended to enable this, especially in public lobbies. Enabling this when the host does not have the ReservedItemSlotCore mod CAN, and likely WILL cause de-sync issues. You have been warned. This setting only applies if you are a non-host client, and the host does not have this mod."));
             displayNegativePrioritySlotsLeftSideOfScreen = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "DisplayNegativePrioritySlotsLeftSideOfScreen", true, "For any reserved item slot mods that have a negative priority, by default, those slots will appear on the left side of the screen, rather than the right. Setting this option to false will have them appear on top of the slots on the right side."));
             focusReservedHotbarHotkey = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "FocusReservedItemSlotsHotkey", "<Keyboard>/leftAlt", "This setting will be ignored if InputUtils is installed and enabled. (I recommend running InputUtils to edit keybinds in the in-game settings)"));
@@ -29,7 +31,7 @@ namespace ReservedItemSlotCore.Config
             preventReservedItemSlotFade = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "PreventReservedHotbarSlotFade", false, "If true, the reserved hotbar slots will not fade with the rest of the default slots."));
 
             TryRemoveOldConfigSettings();
-            ConfigSync.BuildDefaultConfigSync();
+            //ConfigSync.BuildDefaultConfigSync();
         }
 
 

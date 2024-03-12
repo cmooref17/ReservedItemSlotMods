@@ -15,10 +15,10 @@ using ReservedWeaponSlot.Config;
 
 namespace ReservedWeaponSlot
 {
-    [BepInPlugin("FlipMods.ReservedWeaponSlot", "ReservedWeaponSlot", "1.0.8")]
+    [BepInPlugin("FlipMods.ReservedWeaponSlot", "ReservedWeaponSlot", "1.1.0")]
     [BepInDependency("FlipMods.ReservedItemSlotCore", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
-    internal class Plugin : BaseUnityPlugin
+    public class Plugin : BaseUnityPlugin
 	{
         public static Plugin instance;
         static ManualLogSource logger;

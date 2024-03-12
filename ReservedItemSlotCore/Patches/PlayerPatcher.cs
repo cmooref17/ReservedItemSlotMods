@@ -250,6 +250,9 @@ namespace ReservedItemSlotCore.Patches
                             playerData.grabbingReservedItemData = null;
                             playerData.grabbingReservedItem = null;
                             playerData.previousHotbarIndex = -1;
+
+                            if (grabbingItemData.holsteredParentBone != PlayerBone.None)
+                                grabbingObject.EnableItemMeshes(true);
                         }
                         else
                         {
@@ -292,8 +295,8 @@ namespace ReservedItemSlotCore.Patches
                 ReservedPlayerData.localPlayerData.grabbingReservedItemData = null;
                 ReservedPlayerData.localPlayerData.grabbingReservedItem = null;
                 ReservedPlayerData.localPlayerData.previousHotbarIndex = -1;
-                __instance.EnableItemMeshes(false);
                 __instance.PocketItem();
+                //__instance.EnableItemMeshes(false);
                 localPlayerController.playerBodyAnimator.Play(localPlayerController.playerBodyAnimator.GetCurrentAnimatorStateInfo(2).shortNameHash, 2, 1);
             }
 

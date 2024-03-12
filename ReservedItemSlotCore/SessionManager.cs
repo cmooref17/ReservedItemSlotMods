@@ -70,33 +70,35 @@ namespace ReservedItemSlotCore
                 return;
             }
 
-            if (!unlockedReservedItemSlots.Contains(itemSlotData))
+            if (!unlockedReservedItemSlotsDict.ContainsKey(itemSlotData.slotName))
             {
-                int insertIndex = -1;
-                for (int i = 0; i < unlockedReservedItemSlots.Count; i++)
+                unlockedReservedItemSlotsDict.Add(itemSlotData.slotName, itemSlotData);
+                if (!unlockedReservedItemSlots.Contains(itemSlotData))
                 {
-                    if (itemSlotData.slotPriority > unlockedReservedItemSlots[i].slotPriority)
+                    int insertIndex = -1;
+                    for (int i = 0; i < unlockedReservedItemSlots.Count; i++)
                     {
-                        insertIndex = i;
-                        break;
+                        if (itemSlotData.slotPriority > unlockedReservedItemSlots[i].slotPriority)
+                        {
+                            insertIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (insertIndex == -1)
+                        insertIndex = unlockedReservedItemSlots.Count;
+
+                    unlockedReservedItemSlots.Insert(insertIndex, itemSlotData);
+
+                    foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
+                    {
+                        int hotbarIndex = playerData.reservedHotbarStartIndex + insertIndex;
+                        List<GrabbableObject> newItemSlots = new List<GrabbableObject>(playerData.itemSlots);
+                        newItemSlots.Insert(hotbarIndex, null);
+                        playerData.playerController.ItemSlots = newItemSlots.ToArray();
                     }
                 }
-
-                if (insertIndex == -1)
-                    insertIndex = unlockedReservedItemSlots.Count;
-
-                unlockedReservedItemSlots.Insert(insertIndex, itemSlotData);
-
-                foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
-                {
-                    int hotbarIndex = playerData.reservedHotbarStartIndex + insertIndex;
-                    List<GrabbableObject> newItemSlots = new List<GrabbableObject>(playerData.itemSlots);
-                    newItemSlots.Insert(hotbarIndex, null);
-                    playerData.playerController.ItemSlots = newItemSlots.ToArray();
-                }
             }
-            if (!unlockedReservedItemSlotsDict.ContainsKey(itemSlotData.slotName))
-                unlockedReservedItemSlotsDict.Add(itemSlotData.slotName, itemSlotData);
 
             UpdateReservedItemsList();
             HUDPatcher.OnUpdateReservedItemSlots();
@@ -146,7 +148,7 @@ namespace ReservedItemSlotCore
         [HarmonyPostfix]
         public static void OnLoadGameValues()
         {
-            if (NetworkManager.Singleton.IsHost)
+            if (NetworkManager.Singleton.IsHost && SyncManager.isSynced)
                 LoadGameValues();
         }
 

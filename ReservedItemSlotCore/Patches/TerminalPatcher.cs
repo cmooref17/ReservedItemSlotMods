@@ -42,7 +42,7 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPostfix]
         public static void OnBeginUsingTerminal(Terminal __instance)
         {
-            if (!initializedTerminalNodes && ConfigSync.isSynced)
+            if (!initializedTerminalNodes && SyncManager.isSynced)
                 EditExistingTerminalNodes();
         }
 
@@ -51,7 +51,7 @@ namespace ReservedItemSlotCore.Patches
         {
             initializedTerminalNodes = true;
 
-            if (ConfigSync.instance.disablePurchasingReservedSlots)
+            if (!SyncManager.purchaseReservedSlotsEnabled)
                 return;
             foreach (TerminalNode node in terminalInstance.terminalNodes.specialNodes)
             {
@@ -97,7 +97,7 @@ namespace ReservedItemSlotCore.Patches
                 int index1 = modifiedDisplayText.IndexOf("]]]") + 3;
                 string textToReplace = modifiedDisplayText.Substring(index0, index1 - index0);
                 string replacementText = "";
-                if (ConfigSync.instance.disablePurchasingReservedSlots)
+                if (!SyncManager.purchaseReservedSlotsEnabled)
                     replacementText += "Every reserved item slot is unlocked!\n\n";
                 else
                 {
@@ -132,7 +132,7 @@ namespace ReservedItemSlotCore.Patches
             string[] args = input.Split(' ');
             ReservedItemSlotData reservedItemSlot = null;
 
-            if (!ConfigSync.isSynced)
+            if (!SyncManager.isSynced)
             {
                 if (input.StartsWith("reserved"))
                 {
@@ -160,10 +160,10 @@ namespace ReservedItemSlotCore.Patches
                     }
                     else
                     {
-                        SyncManager.SendUnlockItemSlotUpdateToServer(purchasingItemSlot.slotId);
-                        terminalInstance.groupCredits -= purchasingItemSlot.purchasePrice;
-                        terminalInstance.SyncGroupCreditsServerRpc(terminalInstance.groupCredits, terminalInstance.numberOfItemsInDropship);
                         Debug.Log("Purchasing reserved item slot: " + purchasingItemSlot.slotDisplayName + ". Price: " + purchasingItemSlot.purchasePrice);
+                        terminalInstance.groupCredits -= purchasingItemSlot.purchasePrice;
+                        terminalInstance.BuyItemsServerRpc(new int[0], terminalInstance.groupCredits, terminalInstance.numberOfItemsInDropship);
+                        SyncManager.SendUnlockItemSlotUpdateToServer(purchasingItemSlot.slotId);
                         __result = BuildTerminalNodeOnPurchased(purchasingItemSlot, terminalInstance.groupCredits);
                     }
                 }

@@ -23,11 +23,14 @@ namespace ReservedItemSlotCore.Data
         public int slotPriority = 0;
         public int purchasePrice = 200;
 
-        public bool slotUnlocked { get { return SessionManager.unlockedReservedItemSlots != null && SessionManager.unlockedReservedItemSlots.Contains(this); } }
+        public bool slotUnlocked { get { return (SessionManager.unlockedReservedItemSlots != null && SessionManager.unlockedReservedItemSlots.Contains(this)) || (SessionManager.pendingUnlockedReservedItemSlots != null && SessionManager.pendingUnlockedReservedItemSlots.Contains(this)); } }
 
 
-
-
+        /// <summary>
+        /// Attempts to add an item to an existing reserved item slot by name. If the item slot does not exist with the specified name, nothing will break, but the item will not be added to any reserved item slot.
+        /// </summary>
+        /// <param name="itemData"></param>
+        /// <param name="itemSlotName"></param>
         public static void TryAddItemDataToReservedItemSlot(ReservedItemData itemData, string itemSlotName)
         {
             if (!pendingAddReservedItemsToSlots.ContainsKey(itemSlotName))
@@ -38,27 +41,12 @@ namespace ReservedItemSlotCore.Data
                 return;
 
             reservedItemSlot.Add(itemData);
-            /*
-            if (allReservedItemSlotData.TryGetValue(itemSlotName, out var reservedItemSlotData))
-            {
-                if (reservedItemSlotData.ContainsItem(itemData.itemName))
-                {
-                    Plugin.LogWarning("Failed to add item to reserved item slot data. Item already exist in slot. Item: " + itemData.itemName + " Slot: " + itemSlotName);
-                    return false;
-                }
-                Plugin.Log("Adding item to existing reserved item slot data: " + itemSlotName + " Item: " + itemData.itemName);
-                reservedItemSlotData.AddItemToReservedItemSlot(itemData);
-                return true;
-            }
-            Plugin.LogWarning("Failed to add item to reserved item slot. Could not find reserved item slot with name: " + itemSlotName);
-            return false;
-            */
         }
 
 
         [HarmonyPatch(typeof(PreInitSceneScript), "Awake")]
         [HarmonyPrefix]
-        static void AddPendingItemDataToItemSlots()
+        private static void AddPendingItemDataToItemSlots()
         {
             foreach (var kvp in pendingAddReservedItemsToSlots)
             {
@@ -85,8 +73,17 @@ namespace ReservedItemSlotCore.Data
         }
 
 
-
-        public static ReservedItemSlotData CreateReservedItemSlotData(string slotName, int slotPriority, int purchasePrice = 200)
+        /// <summary>
+        /// Creates a new ReservedItemSlotData and adds it to the list of all reserved item slots.
+        /// If a slot exists with the same name, but different priority, the name will be slightly adjusted.
+        /// If a slot exists with the same priority, but different name, the priority will be lowered by 1.
+        /// If a slot exists with the same name and priority, the new slot will not be created, but instead, will return the slot that already exists.
+        /// </summary>
+        /// <param name="slotName"></param>
+        /// <param name="slotPriority"></param>
+        /// <param name="purchasePrice"></param>
+        /// <returns></returns>
+        public static ReservedItemSlotData CreateReservedItemSlotData(string slotName, int slotPriority = 20, int purchasePrice = 200)
         {
             var newSlotData = new ReservedItemSlotData(slotName, slotPriority, purchasePrice);
 
@@ -136,7 +133,11 @@ namespace ReservedItemSlotCore.Data
             slotDisplayName = char.ToUpper(slotDisplayName[0]) + slotDisplayName.Substring(1).ToLower();
         }
 
-
+        /// <summary>
+        /// Adds an item to the ReservedItemSlotData.
+        /// </summary>
+        /// <param name="itemData"></param>
+        /// <returns></returns>
         public ReservedItemData AddItemToReservedItemSlot(ReservedItemData itemData)
         {
             if (reservedItemData.ContainsKey(itemData.itemName))
@@ -150,6 +151,10 @@ namespace ReservedItemSlotCore.Data
         }
 
 
+        /// <summary>
+        /// Removes an item from the ReservedItemSlotData.
+        /// </summary>
+        /// <param name="itemName"></param>
         public void RemoveItemFromReservedItemSlot(string itemName)
         {
             if (reservedItemData.ContainsKey(itemName))
@@ -157,6 +162,10 @@ namespace ReservedItemSlotCore.Data
         }
 
 
+        /// <summary>
+        /// Removes an item from the ReservedItemSlotData.
+        /// </summary>
+        /// <param name="itemData"></param>
         public void RemoveItemFromReservedItemSlot(ReservedItemData itemData)
         {
             if (itemData == null)

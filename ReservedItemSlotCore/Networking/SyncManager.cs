@@ -9,11 +9,13 @@ using ReservedItemSlotCore.Config;
 using ReservedItemSlotCore.Patches;
 using ReservedItemSlotCore.Data;
 using System.Linq;
+using System;
+
 
 namespace ReservedItemSlotCore.Networking
 {
     [HarmonyPatch]
-    internal class SyncManager
+    internal static class SyncManager
     {
         public static PlayerControllerB localPlayerController;
         public static bool isSynced = false;
@@ -25,11 +27,7 @@ namespace ReservedItemSlotCore.Networking
 
         public static List<ReservedItemData> reservedItems = new List<ReservedItemData>();
         public static Dictionary<string, ReservedItemData> reservedItemsDict = new Dictionary<string, ReservedItemData>();
-        //public static List<ReservedItemSlotData> syncReservedItemsList = new List<ReservedItemSlotData>();
-        //public static List<ReservedItemSlotData> syncReservedItemSlotReps = new List<ReservedItemSlotData>();
-
-        //public static int numReservedItemSlots { get { return unlockableReservedItemSlots.Count; } }
-
+        
 
         public static bool IsReservedItem(string itemSlotName)
         {
@@ -40,9 +38,6 @@ namespace ReservedItemSlotCore.Networking
             }
             return false;
         }
-        //public static bool TryGetReservedItemData(string itemName, out ReservedItemSlotData itemSlotData) { itemSlotData = null; if (IsReservedItem(itemName)) { itemSlotData = unlockableReservedItemSlotsDict[itemName]; return true; } return false; }
-        //public static bool TryGetReservedItemData(GrabbableObject item, out ReservedItemSlotData itemSlotData) { itemSlotData = null; return item != null && TryGetReservedItemData(item.itemProperties.itemName, out itemSlotData); }
-
 
 
         [HarmonyPatch(typeof(StartOfRound), "Awake")]
@@ -65,11 +60,26 @@ namespace ReservedItemSlotCore.Networking
             {
                 isSynced = true;
                 purchaseReservedSlotsEnabled = !ConfigSettings.disablePurchasingReservedSlots.Value;
-                unlockableReservedItemSlotsDict = ReservedItemSlotData.allReservedItemSlotData; // reservedItemsDict;
-                unlockableReservedItemSlots = unlockableReservedItemSlotsDict.Values.ToList();
 
-                foreach (var reservedItemSlot in unlockableReservedItemSlots)
-                    SessionManager.UnlockReservedItemSlot(reservedItemSlot);
+                //unlockableReservedItemSlotsDict = ReservedItemSlotData.allReservedItemSlotData; // reservedItemsDict;
+                //unlockableReservedItemSlots = unlockableReservedItemSlotsDict.Values.ToList();
+
+                unlockableReservedItemSlots = new List<ReservedItemSlotData>();
+                unlockableReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
+
+                foreach (var reservedItemSlot in ReservedItemSlotData.allReservedItemSlotData.Values)
+                {
+                    var newReservedItemSlot = new ReservedItemSlotData(reservedItemSlot.slotName, reservedItemSlot.slotPriority, (int)(reservedItemSlot.purchasePrice * ConfigSettings.globalItemSlotPriceModifier.Value));
+                    foreach (var itemData in reservedItemSlot.reservedItemData.Values)
+                        newReservedItemSlot.AddItemToReservedItemSlot(new ReservedItemData(itemData.itemName, itemData.holsteredParentBone, itemData.holsteredPositionOffset, itemData.holsteredRotationOffset));
+                    
+                    AddReservedItemSlotData(newReservedItemSlot);
+
+                    if (!purchaseReservedSlotsEnabled)
+                        SessionManager.UnlockReservedItemSlot(reservedItemSlot);
+                }
+
+                SessionManager.LoadGameValues();
 
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.OnSwapHotbarServerRpc", OnSwapHotbarServerRpc);
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.RequestSyncServerRpc", RequestSyncServerRpc);
@@ -80,16 +90,14 @@ namespace ReservedItemSlotCore.Networking
                 isSynced = false;
                 unlockableReservedItemSlotsDict = canUseModDisabledOnHost ? ReservedItemSlotData.allReservedItemSlotData : new Dictionary<string, ReservedItemSlotData>();
                 unlockableReservedItemSlots = unlockableReservedItemSlotsDict.Values.ToList();
-
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.OnSwapHotbarClientRpc", OnSwapHotbarClientRpc);
-                NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlots.RequestSyncClientRpc", RequestSyncClientRpc);
+                NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.RequestSyncClientRpc", RequestSyncClientRpc);
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.OnUnlockItemSlotClientRpc", OnUnlockItemSlotClientRpc);
 
                 RequestSyncFromServer();
             }
 
             UpdateReservedItemsList();
-            SessionManager.LoadGameValues();
         }
 
 
@@ -98,10 +106,11 @@ namespace ReservedItemSlotCore.Networking
             if (itemSlotData == null)
                 return;
 
-            if (unlockableReservedItemSlots != null)
-                unlockableReservedItemSlots.Add(itemSlotData);
-            if (unlockableReservedItemSlotsDict != null)
+            if (unlockableReservedItemSlotsDict != null && !unlockableReservedItemSlotsDict.ContainsKey(itemSlotData.slotName))
+            {
                 unlockableReservedItemSlotsDict.Add(itemSlotData.slotName, itemSlotData);
+                unlockableReservedItemSlots.Add(itemSlotData);
+            }
         }
 
 
@@ -119,10 +128,11 @@ namespace ReservedItemSlotCore.Networking
                 {
                     foreach (var itemData in itemSlotData.reservedItemData.Values)
                     {
-                        if (!reservedItems.Contains(itemData))
-                            reservedItems.Add(itemData);
                         if (!reservedItemsDict.ContainsKey(itemData.itemName))
+                        {
                             reservedItemsDict.Add(itemData.itemName, itemData);
+                            reservedItems.Add(itemData);
+                        }
                     }
                 }
             }
@@ -160,63 +170,76 @@ namespace ReservedItemSlotCore.Networking
             if (!NetworkManager.Singleton.IsServer)
                 return;
 
-            int sizeItemInfos = sizeof(int) * unlockableReservedItemSlots.Count;
+            int sizeItemInfos = sizeof(int); // num item slots
+
             foreach (var itemSlotData in unlockableReservedItemSlots)
             {
                 if (itemSlotData != null && itemSlotData.reservedItemData != null && itemSlotData.reservedItemData.Count > 0)
                 {
-                    sizeItemInfos += sizeof(int) + sizeof(char) * itemSlotData.slotName.Length; // slot name
-                    sizeItemInfos += sizeof(int); // slot priority
-                    sizeItemInfos += sizeof(int); // purchase price
+                    sizeItemInfos += sizeof(int);
+                    byte[] slotNameBytes = System.Text.Encoding.UTF8.GetBytes(itemSlotData.slotName);
+                    sizeItemInfos += slotNameBytes.Length;
 
-                    sizeItemInfos += itemSlotData.reservedItemData.Count; // num items in slot
+                    sizeItemInfos += sizeof(int); // slot priority
+                    sizeItemInfos += sizeof(int); // slot price
+
+                    sizeItemInfos += sizeof(int); // itemSlotData.reservedItemData.Count; num items in slot
                     foreach (var itemData in itemSlotData.reservedItemData.Values)
                     {
-                        sizeItemInfos += sizeof(int) + sizeof(char) * itemData.itemName.Length; // item name
-                        sizeItemInfos += sizeof(int); // holster to bone index
+                        sizeItemInfos += sizeof(int);
+                        byte[] itemNameBytes = System.Text.Encoding.UTF8.GetBytes(itemData.itemName);
+                        sizeItemInfos += itemNameBytes.Length; // sizeItemInfos += sizeof(int) + sizeof(char) * itemData.itemName.Length; // item name
+                        sizeItemInfos += sizeof(int); // holster to bone
                         sizeItemInfos += sizeof(float) * 6; // holster to transform position/rotation
                     }
+                    sizeItemInfos += sizeof(bool); // is unlocked
                 }
-                sizeItemInfos += sizeof(bool); // is unlocked
             }
 
             var writer = new FastBufferWriter(sizeof(bool) + sizeItemInfos, Allocator.Temp);
-            writer.WriteValue(purchaseReservedSlotsEnabled);
-            writer.WriteValue(unlockableReservedItemSlots.Count);
+            writer.WriteValue(purchaseReservedSlotsEnabled); // bool
+            writer.WriteValue(unlockableReservedItemSlots.Count); // int
 
             foreach (var itemSlotData in unlockableReservedItemSlots)
             {
-                writer.WriteValue(itemSlotData.slotName.Length);
-                foreach (var c in itemSlotData.slotName)
-                    writer.WriteValue(c);
-                writer.WriteValue(itemSlotData.slotPriority);
-                writer.WriteValue(itemSlotData.purchasePrice);
-
-                foreach (var itemData in itemSlotData.reservedItemData.Values)
+                if (itemSlotData != null && itemSlotData.reservedItemData != null && itemSlotData.reservedItemData.Count > 0)
                 {
-                    writer.WriteValue(itemData.itemName.Length);
-                    foreach (var c in itemData.itemName)
-                        writer.WriteValue(c);
-                    writer.WriteValue(itemData.holsteredParentBone);
-                    writer.WriteValue(itemData.holsteredPositionOffset.x);
-                    writer.WriteValue(itemData.holsteredPositionOffset.y);
-                    writer.WriteValue(itemData.holsteredPositionOffset.z);
-                    writer.WriteValue(itemData.holsteredRotationOffset.x);
-                    writer.WriteValue(itemData.holsteredRotationOffset.y);
-                    writer.WriteValue(itemData.holsteredRotationOffset.z);
+                    byte[] slotNameBytes = System.Text.Encoding.UTF8.GetBytes(itemSlotData.slotName);
+                    writer.WriteValue(slotNameBytes.Length);
+                    foreach (byte b in slotNameBytes)
+                        writer.WriteValue(b);
+
+                    writer.WriteValue(itemSlotData.slotPriority); // int
+                    writer.WriteValue(itemSlotData.purchasePrice); // int
+
+                    writer.WriteValue(itemSlotData.reservedItemData.Count); // int
+                    foreach (var itemData in itemSlotData.reservedItemData.Values)
+                    {
+                        byte[] itemNameBytes = System.Text.Encoding.UTF8.GetBytes(itemData.itemName);
+                        writer.WriteValue(itemNameBytes.Length);
+                        foreach (byte b in itemNameBytes)
+                            writer.WriteValue(b);
+                        writer.WriteValue((int)itemData.holsteredParentBone); // int
+                        writer.WriteValue(itemData.holsteredPositionOffset.x); // float
+                        writer.WriteValue(itemData.holsteredPositionOffset.y); // float
+                        writer.WriteValue(itemData.holsteredPositionOffset.z); // float
+                        writer.WriteValue(itemData.holsteredRotationOffset.x); // float
+                        writer.WriteValue(itemData.holsteredRotationOffset.y); // float
+                        writer.WriteValue(itemData.holsteredRotationOffset.z); // float
+                    }
+                    writer.WriteValue(itemSlotData.slotUnlocked); // bool
                 }
-                writer.WriteValue(itemSlotData.slotUnlocked);
             }
 
             if (sendToAllClients)
             {
-                Plugin.Log("Sending sync to client with id: " + clientId);
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ReservedItemSlotCore.RequestSyncClientRpc", clientId, writer);
+                Plugin.Log("Sending sync to all clients.");
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("ReservedItemSlotCore.RequestSyncClientRpc", writer, NetworkDelivery.ReliableFragmentedSequenced);
             }
             else
             {
-                Plugin.Log("Sending sync to all clients.");
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("ReservedItemSlotCore.RequestSyncClientRpc", writer);
+                Plugin.Log("Sending sync to client with id: " + clientId);
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ReservedItemSlotCore.RequestSyncClientRpc", clientId, writer, NetworkDelivery.ReliableFragmentedSequenced);
             }
         }
 
@@ -227,7 +250,6 @@ namespace ReservedItemSlotCore.Networking
             if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
                 return;
 
-            //PlayerPatcher.isSynced = false;
             isSynced = true;
 
             unlockableReservedItemSlots = new List<ReservedItemSlotData>();
@@ -235,34 +257,31 @@ namespace ReservedItemSlotCore.Networking
 
             Plugin.Log("Receiving sync from server.");
 
+            reader.ReadValue(out purchaseReservedSlotsEnabled);
             reader.ReadValue(out int numEntries);
-
             for (int i = 0; i < numEntries; i++)
             {
-                reader.ReadValue(out int lengthSlotName);
-                string slotName = "";
-                for (int j = 0; j < lengthSlotName; j++)
-                {
-                    reader.ReadValue(out char c);
-                    slotName += c;
-                }
+                reader.ReadValue(out int slotNameBytesLength);
+
+                byte[] slotNameBytes = new byte[slotNameBytesLength];
+                reader.ReadBytes(ref slotNameBytes, slotNameBytesLength);
+                string slotName = System.Text.Encoding.UTF8.GetString(slotNameBytes);
+
 
                 reader.ReadValue(out int slotPriority);
                 reader.ReadValue(out int purchasePrice);
 
-                var itemSlotData = ReservedItemSlotData.CreateReservedItemSlotData(slotName, slotPriority, purchasePrice);
+                var itemSlotData = new ReservedItemSlotData(slotName, slotPriority, purchasePrice);
 
                 reader.ReadValue(out int numItemData);
 
                 for (int j = 0; j < numItemData; j++)
                 {
-                    reader.ReadValue(out int lengthItemName);
-                    string itemName = "";
-                    for (int k = 0; k < lengthItemName; k++)
-                    {
-                        reader.ReadValue(out char c);
-                        itemName += c;
-                    }
+                    reader.ReadValue(out int itemNameBytesLength);
+
+                    byte[] itemNameBytes = new byte[itemNameBytesLength];
+                    reader.ReadBytes(ref itemNameBytes, itemNameBytesLength);
+                    string itemName = System.Text.Encoding.UTF8.GetString(itemNameBytes);
 
                     reader.ReadValue(out int holsteredParentBoneIndex);
                     PlayerBone bone = (PlayerBone)holsteredParentBoneIndex;
@@ -279,20 +298,18 @@ namespace ReservedItemSlotCore.Networking
                     itemSlotData.AddItemToReservedItemSlot(itemData);
                 }
                 reader.ReadValue(out bool unlockedSlot);
+
+                AddReservedItemSlotData(itemSlotData);
+
                 if (unlockedSlot)
                     SessionManager.UnlockReservedItemSlot(itemSlotData);
 
-                AddReservedItemSlotData(itemSlotData);
                 Plugin.Log("Receiving sync for reserved item slot data: - Slot: " + itemSlotData.slotName + " Priority: " + itemSlotData.slotPriority);
             }
 
             UpdateReservedItemsList();
             Plugin.Log("Received sync for " + unlockableReservedItemSlotsDict.Count + " reserved item slots.");
         }
-
-
-
-
 
 
 
@@ -311,14 +328,18 @@ namespace ReservedItemSlotCore.Networking
         {
             if (!NetworkManager.Singleton.IsServer)
                 return;
-            if (ConfigSync.instance.disablePurchasingReservedSlots)
-                return;
 
             reader.ReadValue(out int reservedItemSlotId);
 
             if (reservedItemSlotId >= 0 && unlockableReservedItemSlots != null && reservedItemSlotId < unlockableReservedItemSlots.Count)
             {
-                Plugin.Log("Receiving unlocked reserved item slot update from client for. Item slot id: " + reservedItemSlotId);
+                if (NetworkManager.Singleton.IsClient)
+                {
+                    if (clientId != localPlayerController.actualClientId)
+                        Plugin.Log("Receiving unlocked reserved item slot update from client for. Item slot id: " + reservedItemSlotId);
+                    var reservedItemSlot = unlockableReservedItemSlots[reservedItemSlotId];
+                    SessionManager.UnlockReservedItemSlot(reservedItemSlot);
+                }
                 SendUnlockItemSlotToClients(reservedItemSlotId);
                 return;
             }
@@ -333,12 +354,6 @@ namespace ReservedItemSlotCore.Networking
 
             if (reservedItemSlotId >= 0 && unlockableReservedItemSlots != null && reservedItemSlotId < unlockableReservedItemSlots.Count)
             {
-                if (NetworkManager.Singleton.IsClient)
-                {
-                    var reservedItemSlot = unlockableReservedItemSlots[reservedItemSlotId];
-                    SessionManager.UnlockReservedItemSlot(reservedItemSlot);
-                }
-
                 var writer = new FastBufferWriter(sizeof(int), Allocator.Temp);
                 writer.WriteValue(reservedItemSlotId);
                 NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("ReservedItemSlotCore.OnUnlockItemSlotClientRpc", writer);
@@ -352,11 +367,8 @@ namespace ReservedItemSlotCore.Networking
         {
             if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
                 return;
-            if (ConfigSync.instance.disablePurchasingReservedSlots)
-                return;
 
             reader.ReadValue(out int reservedItemSlotId);
-
             if (reservedItemSlotId >= 0 && unlockableReservedItemSlots != null && reservedItemSlotId < unlockableReservedItemSlots.Count)
             {
                 Plugin.Log("Receiving unlocked reserved item slot update from server. Item slot id: " + reservedItemSlotId);
@@ -366,10 +378,6 @@ namespace ReservedItemSlotCore.Networking
             }
             Plugin.LogError("Failed to receive unlock reserved item slot from server. Received item slot id: " + reservedItemSlotId + " Size of unlockable reserved item slots: " + unlockableReservedItemSlots.Count);
         }
-
-
-
-
 
 
 

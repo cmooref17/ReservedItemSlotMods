@@ -18,7 +18,8 @@ namespace ReservedSprayPaintSlot.Patches
         public static PlayerControllerB GetPreviousPlayerHeldBy(SprayPaintItem sprayPaintItem) => (PlayerControllerB)Traverse.Create(sprayPaintItem).Field("previousPlayerHeldBy").GetValue();
 
         public static SprayPaintItem GetMainSprayPaint(PlayerControllerB playerController) => GetCurrentlySelectedSprayPaint(playerController) ?? GetReservedSprayPaint(playerController);
-        public static SprayPaintItem GetReservedSprayPaint(PlayerControllerB playerController) => SessionManager.unlockedReservedItemSlots.Contains(Plugin.sprayPaintSlotData) && ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData) ? playerData.GetReservedItem(Plugin.sprayPaintSlotData) as SprayPaintItem: null;
+        //public static SprayPaintItem GetReservedSprayPaint(PlayerControllerB playerController) => SessionManager.unlockedReservedItemSlots.Contains(Plugin.sprayPaintSlotData) && ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData) ? playerData.GetReservedItem(Plugin.sprayPaintSlotData) as SprayPaintItem: null;
+        public static SprayPaintItem GetReservedSprayPaint(PlayerControllerB playerController) => SyncManager.unlockableReservedItemSlotsDict.TryGetValue(Plugin.sprayPaintSlotData.slotName, out var reservedItemSlot) && reservedItemSlot.slotUnlocked && ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData) ? playerData.GetReservedItem(reservedItemSlot) as SprayPaintItem : null;
         public static SprayPaintItem GetCurrentlySelectedSprayPaint(PlayerControllerB playerController) => playerController.currentItemSlot >= 0 && playerController.currentItemSlot < playerController.ItemSlots.Length ? playerController?.ItemSlots[playerController.currentItemSlot] as SprayPaintItem : null;
     }
 }

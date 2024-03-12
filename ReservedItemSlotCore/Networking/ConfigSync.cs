@@ -14,6 +14,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
+/*
 namespace ReservedItemSlotCore.Networking
 {
     [Serializable]
@@ -100,9 +101,9 @@ namespace ReservedItemSlotCore.Networking
                 return;
 
             Plugin.Log("Receiving config sync from server.");
-            reader.ReadValue(out bool disablePurchasingReservedSlots);
-            instance.disablePurchasingReservedSlots = disablePurchasingReservedSlots;
+            reader.ReadValue(out instance.disablePurchasingReservedSlots);
             isSynced = true;
         }
     }
 }
+*/

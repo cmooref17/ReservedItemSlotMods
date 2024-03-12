@@ -127,7 +127,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BoneMap.cs" />
+    <Compile Include="Data\BoneMap.cs" />
     <Compile Include="CompatPatcher.cs" />
     <Compile Include="Input\KeybindDisplayNames.cs" />
     <Compile Include="Networking\ConfigSync.cs" />
