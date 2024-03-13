@@ -14,7 +14,7 @@ namespace ReservedItemSlotCore.Data
         public List<ReservedItemSlotData> parentItemSlots = new List<ReservedItemSlotData>();
         public string itemName = "";
 
-        public bool showOnPlayerWhileHolstered { get { return holsteredParentBone != 0; } }
+        public bool showOnPlayerWhileHolstered { get { return holsteredParentBone != PlayerBone.None; } }
         public PlayerBone holsteredParentBone;
         public Vector3 holsteredPositionOffset = Vector3.zero;
         public Vector3 holsteredRotationOffset = Vector3.zero;

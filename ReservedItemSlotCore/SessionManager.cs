@@ -223,12 +223,14 @@ namespace ReservedItemSlotCore
         public static bool IsReservedItem(string itemName) => allReservedItemData.ContainsKey(itemName);
 
 
-        public static bool TryGetUnlockedReservedItemData(string itemName, out ReservedItemData itemSlotData) { itemSlotData = null; if (allReservedItemData.TryGetValue(itemName, out var itemData) && itemData.HasUnlockedParentSlot()) itemSlotData = itemData; return itemSlotData != null; }
-        public static bool TryGetUnlockedReservedItemData(GrabbableObject item, out ReservedItemData itemSlotData) { itemSlotData = null; return item?.itemProperties != null && TryGetUnlockedReservedItemData(item.itemProperties.itemName, out itemSlotData); }
+        public static bool TryGetUnlockedItemSlotData(string itemSlotName, out ReservedItemSlotData itemSlotData) { itemSlotData = null; unlockedReservedItemSlotsDict.TryGetValue(itemSlotName, out itemSlotData); return itemSlotData != null; }
+
+        //public static bool TryGetUnlockedReservedItemData(string itemName, out ReservedItemData itemData) { itemData = null; if (allReservedItemData.TryGetValue(itemName, out var thisItemData) && thisItemData.HasUnlockedParentSlot()) thisItemData = thisItemData; return thisItemData != null; }
+        //public static bool TryGetUnlockedReservedItemData(GrabbableObject item, out ReservedItemData itemData) { itemData = null; return item?.itemProperties != null && TryGetUnlockedReservedItemData(item.itemProperties.itemName, out itemData); }
 
 
-        public static bool TryGetReservedItemData(string itemName, out ReservedItemData itemSlotData) { itemSlotData = null; if (allReservedItemData.TryGetValue(itemName, out var itemData)) itemSlotData = itemData; return itemSlotData != null; }
-        public static bool TryGetReservedItemData(GrabbableObject item, out ReservedItemData itemSlotData) { itemSlotData = null; return item?.itemProperties != null && TryGetReservedItemData(item.itemProperties.itemName, out itemSlotData); }
+        public static bool TryGetUnlockedItemData(string itemName, out ReservedItemData itemData) { itemData = null; return allReservedItemData.TryGetValue(itemName, out itemData); }
+        public static bool TryGetUnlockedItemData(GrabbableObject item, out ReservedItemData itemData) { itemData = null; return item?.itemProperties != null && TryGetUnlockedItemData(item.itemProperties.itemName, out itemData); }
 
 
         public static bool HasReservedItemSlot(GrabbableObject grabbableObject) => grabbableObject?.itemProperties != null ? HasReservedItemSlot(grabbableObject.itemProperties.itemName) : false;

@@ -24,7 +24,7 @@ namespace ReservedItemSlotCore.Patches
             if (__instance.playerHeldBy == null)
                 return;
 
-            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData) && SessionManager.TryGetUnlockedReservedItemData(__instance, out var reservedItemData))
+            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData) && SessionManager.TryGetUnlockedItemData(__instance, out var reservedItemData))
             {
                 if (playerData.IsItemInReservedItemSlot(__instance))
                 {
@@ -46,7 +46,7 @@ namespace ReservedItemSlotCore.Patches
             if (__instance.playerHeldBy == null)
                 return;
 
-            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData) && SessionManager.TryGetUnlockedReservedItemData(__instance, out var reservedItemData))
+            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData) && SessionManager.TryGetUnlockedItemData(__instance, out var reservedItemData))
             {
                 foreach (var renderer in __instance.GetComponentsInChildren<MeshRenderer>())
                 {
@@ -80,7 +80,7 @@ namespace ReservedItemSlotCore.Patches
             if (__instance.playerHeldBy == null || __instance.parentObject == null)
                 return;
 
-            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData) && SessionManager.TryGetUnlockedReservedItemData(__instance, out var reservedItemData))
+            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData) && SessionManager.TryGetUnlockedItemData(__instance, out var reservedItemData))
             {
                 if (playerData.IsItemInReservedItemSlot(__instance) && reservedItemData.holsteredParentBone != PlayerBone.None && __instance != playerData.currentSelectedItem)
                 {
@@ -99,7 +99,7 @@ namespace ReservedItemSlotCore.Patches
             if (__instance.playerHeldBy == null)
                 return;
 
-            if (SessionManager.TryGetUnlockedReservedItemData(__instance, out var reservedItemData) && reservedItemData.holsteredParentBone != PlayerBone.None && !PlayerPatcher.ReservedItemIsBeingGrabbed(__instance))
+            if (SessionManager.TryGetUnlockedItemData(__instance, out var reservedItemData) && reservedItemData.holsteredParentBone != PlayerBone.None && !PlayerPatcher.ReservedItemIsBeingGrabbed(__instance))
                 enable = true;
         }
     }

@@ -63,6 +63,9 @@ namespace ReservedItemSlotCore.Data
         {
             if (itemSlotData == null)
                 return null;
+            if (!SessionManager.unlockedReservedItemSlotsDict.TryGetValue(itemSlotData.slotName, out itemSlotData))
+                return null;
+
             int index = SessionManager.unlockedReservedItemSlots.IndexOf(itemSlotData);
             if (index == -1)
                 return null;

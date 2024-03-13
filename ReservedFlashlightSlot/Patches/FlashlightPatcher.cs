@@ -21,7 +21,7 @@ namespace ReservedFlashlightSlot.Patches
         public static PlayerControllerB GetPreviousPlayerHeldBy(FlashlightItem flashlightItem) => (PlayerControllerB)Traverse.Create(flashlightItem).Field("previousPlayerHeldBy").GetValue();
 
         public static FlashlightItem GetMainFlashlight(PlayerControllerB playerController) => GetCurrentlySelectedFlashlight(playerController) ?? GetReservedFlashlight(playerController);
-        public static FlashlightItem GetReservedFlashlight(PlayerControllerB playerController) => SyncManager.unlockableReservedItemSlotsDict.TryGetValue(Plugin.flashlightSlotData.slotName, out var reservedItemSlot) && reservedItemSlot.slotUnlocked && ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData) ? playerData.GetReservedItem(reservedItemSlot) as FlashlightItem : null;
+        public static FlashlightItem GetReservedFlashlight(PlayerControllerB playerController) => SessionManager.TryGetUnlockedItemSlotData(Plugin.flashlightSlotData.slotName, out var itemSlot) && ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData) ? playerData.GetReservedItem(itemSlot) as FlashlightItem : null;
         public static FlashlightItem GetCurrentlySelectedFlashlight(PlayerControllerB playerController) => playerController.currentItemSlot >= 0 && playerController.currentItemSlot < playerController.ItemSlots.Length ? playerController?.ItemSlots[playerController.currentItemSlot] as FlashlightItem : null;
 
         public static bool IsFlashlightOn(PlayerControllerB playerController) => GetMainFlashlight(playerController)?.isBeingUsed ?? false;

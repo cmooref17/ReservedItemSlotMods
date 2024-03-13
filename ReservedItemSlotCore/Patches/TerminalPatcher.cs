@@ -11,7 +11,6 @@ using GameNetcodeStuff;
 using System.IO;
 using BepInEx;
 using UnityEngine.InputSystem;
-using UnityEngine.Animations.Rigging;
 using UnityEditor;
 using System.Security.Cryptography;
 using DunGen;
@@ -49,9 +48,7 @@ namespace ReservedItemSlotCore.Patches
 
         public static void EditExistingTerminalNodes()
         {
-
-            if (!SyncManager.purchaseReservedSlotsEnabled)
-                return;
+            //if (!SyncManager.purchaseReservedSlotsEnabled) return;
 
             initializedTerminalNodes = true;
 
@@ -64,7 +61,14 @@ namespace ReservedItemSlotCore.Patches
                     if (insertIndex != -1)
                     {
                         insertIndex += keyword.Length;
-                        string addText = "\n\n[ReservedItemSlots]\nType \"reserved\" to purchase reserved item slots.";
+                        string addText = "\n\n[ReservedItemSlots]\n";
+                        if (SyncManager.purchaseReservedSlotsEnabled) 
+                            addText += "Type \"Reserved\" to purchase reserved item slots.";
+                        else
+                        {
+                            addText += "<s>Type \"Reserved\" to purchase reserved item slots.</s>\n" +
+                                "[DISABLED BY HOST IN CONFIG]";
+                        }
                         node.displayText = node.displayText.Insert(insertIndex, addText);
                     }
                     else
@@ -77,8 +81,14 @@ namespace ReservedItemSlotCore.Patches
                     int insertIndex = node.displayText.IndexOf(keyword);
                     if (insertIndex != -1)
                     {
-                        string addText = ">RESERVED\n" +
-                            "Show purchasable reserved item slots.\n\n";
+                        string addText = ">RESERVED\n";
+                        if (SyncManager.purchaseReservedSlotsEnabled)
+                            addText += "Purchase reserved item slots.\n\n";
+                        else
+                        {
+                            addText += "<s>Purchase reserved item slots.</s>\n" +
+                                "[DISABLED BY HOST IN CONFIG]\n\n";
+                        }
                         node.displayText = node.displayText.Insert(insertIndex, addText);
                     }
                 }

@@ -153,7 +153,7 @@ namespace ReservedItemSlotCore.Patches
                     NetworkObject networkObject = currentlyGrabbingObject.NetworkObject;
                     if (networkObject != null && networkObject.IsSpawned)
                     {
-                        if (SessionManager.TryGetReservedItemData(currentlyGrabbingObject, out var grabbingItemData))
+                        if (SessionManager.TryGetUnlockedItemData(currentlyGrabbingObject, out var grabbingItemData))
                         {
                             Plugin.Log("Beginning grab on reserved item: " + grabbingItemData.itemName);
                             ReservedPlayerData.localPlayerData.grabbingReservedItemData = grabbingItemData;
@@ -191,7 +191,7 @@ namespace ReservedItemSlotCore.Patches
                 if (grabValidated && grabbedObject.TryGet(out NetworkObject networkObject))
                 {
                     GrabbableObject grabbingObject = networkObject.GetComponent<GrabbableObject>();
-                    if (SessionManager.TryGetUnlockedReservedItemData(grabbingObject, out var grabbingItemData))
+                    if (SessionManager.TryGetUnlockedItemData(grabbingObject, out var grabbingItemData))
                     {
                         var grabbingReservedItemSlotData = playerData.GetFirstEmptySlotForItem(grabbingItemData.itemName);
                         if (grabbingReservedItemSlotData != null)
@@ -232,7 +232,7 @@ namespace ReservedItemSlotCore.Patches
                 if (grabValidated && grabbedObject.TryGet(out NetworkObject networkObject))
                 {
                     GrabbableObject grabbingObject = networkObject.GetComponent<GrabbableObject>();
-                    if (SessionManager.TryGetReservedItemData(grabbingObject, out var grabbingItemData))
+                    if (SessionManager.TryGetUnlockedItemData(grabbingObject, out var grabbingItemData))
                     {
                         SetSpecialGrabAnimationBool(__instance, playerData.previouslyHeldItem != null, playerData.previouslyHeldItem);
                         __instance.playerBodyAnimator.Play(__instance.playerBodyAnimator.GetCurrentAnimatorStateInfo(2).shortNameHash, 2, 1);
