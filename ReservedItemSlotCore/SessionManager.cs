@@ -22,6 +22,7 @@ namespace ReservedItemSlotCore
         public static Dictionary<string, ReservedItemData> allReservedItemData = new Dictionary<string, ReservedItemData>();
 
         public static List<ReservedItemSlotData> pendingUnlockedReservedItemSlots = new List<ReservedItemSlotData>();
+        public static Dictionary<string, ReservedItemSlotData> pendingUnlockedReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
 
         public static int numReservedItemSlotsUnlocked { get { return unlockedReservedItemSlots != null ? unlockedReservedItemSlots.Count : 0; } }
 
@@ -35,6 +36,7 @@ namespace ReservedItemSlotCore
             unlockedReservedItemSlots.Clear();
             unlockedReservedItemSlotsDict.Clear();
             pendingUnlockedReservedItemSlots.Clear();
+            pendingUnlockedReservedItemSlotsDict.Clear();
             allReservedItemData.Clear();
             preGame = true;
         }
@@ -45,6 +47,7 @@ namespace ReservedItemSlotCore
         public static void OnStartGame()
         {
             preGame = false;
+            HUDPatcher.preGameReminderText.enabled = false;
 
             foreach (var reservedItemSlot in SyncManager.unlockableReservedItemSlots)
             {
@@ -57,16 +60,21 @@ namespace ReservedItemSlotCore
                 foreach (var reservedItemSlot in pendingUnlockedReservedItemSlots)
                     UnlockReservedItemSlot(reservedItemSlot);
                 pendingUnlockedReservedItemSlots.Clear();
+                pendingUnlockedReservedItemSlotsDict.Clear();
             }
         }
 
 
         public static void UnlockReservedItemSlot(ReservedItemSlotData itemSlotData)
         {
+            Plugin.LogWarning("Unlocking slot: " + itemSlotData.slotName);
             if (preGame)
             {
-                if (!pendingUnlockedReservedItemSlots.Contains(itemSlotData))
+                if (!pendingUnlockedReservedItemSlotsDict.ContainsKey(itemSlotData.slotName))
+                {
+                    pendingUnlockedReservedItemSlotsDict.Add(itemSlotData.slotName, itemSlotData);
                     pendingUnlockedReservedItemSlots.Add(itemSlotData);
+                }
                 return;
             }
 
@@ -131,6 +139,7 @@ namespace ReservedItemSlotCore
         public static void OnResetShip()
         {
             preGame = true;
+            HUDPatcher.preGameReminderText.enabled = true;
             ResetProgress();
         }
 

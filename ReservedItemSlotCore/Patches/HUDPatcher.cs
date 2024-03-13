@@ -35,6 +35,8 @@ namespace ReservedItemSlotCore.Patches
         static bool lerpToggledItemSlotFrames = false;
         static float largestPositionDifference = 0;
 
+        public static TextMeshProUGUI preGameReminderText;
+
 
         [HarmonyPatch(typeof(HUDManager), "Awake")]
         [HarmonyPostfix]
@@ -46,6 +48,22 @@ namespace ReservedItemSlotCore.Patches
             itemSlotSpacing = ((9f / 8f) * itemSlotWidth);
             xPos = (canvasScaler.referenceResolution.x / 2) / aspectRatioFitter.aspectRatio - itemSlotWidth / 4;
             reservedItemSlots.Clear();
+
+            if (preGameReminderText == null)
+                preGameReminderText = new GameObject("PregameTooltip", new Type[] { typeof(RectTransform), typeof(TextMeshProUGUI) }).GetComponent<TextMeshProUGUI>();
+
+            RectTransform tooltipTransform = preGameReminderText.rectTransform;
+            tooltipTransform.transform.parent = __instance.itemSlotIconFrames[0].rectTransform.parent;
+            tooltipTransform.localScale = Vector3.one;
+            tooltipTransform.sizeDelta = new Vector2(HUDManager.Instance.itemSlotIconFrames[0].rectTransform.sizeDelta.x * 2, 10);
+            tooltipTransform.pivot = Vector2.one / 2;
+            tooltipTransform.anchoredPosition3D = new Vector3(xPos - 16, -(tooltipTransform.sizeDelta.x / 4), 0);
+            preGameReminderText.font = HUDManager.Instance.controlTipLines[0].font;
+            preGameReminderText.fontSize = 5.5f;
+            preGameReminderText.alignment = TextAlignmentOptions.Justified;
+            preGameReminderText.fontStyle = FontStyles.Bold;
+            //preGameReminderText.textInfo.lineInfo[preGameReminderText.textInfo.lineCount - 1].alignment = HorizontalAlignmentOptions.Right;
+            preGameReminderText.text = "Reserved Slots will become available upon starting the round.";
         }
 
 

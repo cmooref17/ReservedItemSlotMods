@@ -61,6 +61,8 @@ namespace ReservedItemSlotCore.Networking
                 isSynced = true;
                 purchaseReservedSlotsEnabled = !ConfigSettings.disablePurchasingReservedSlots.Value;
 
+                Plugin.LogWarning("purchaseReservedSlotsEnabled: " + purchaseReservedSlotsEnabled);
+
                 //unlockableReservedItemSlotsDict = ReservedItemSlotData.allReservedItemSlotData; // reservedItemsDict;
                 //unlockableReservedItemSlots = unlockableReservedItemSlotsDict.Values.ToList();
 
@@ -227,6 +229,7 @@ namespace ReservedItemSlotCore.Networking
                         writer.WriteValue(itemData.holsteredRotationOffset.y); // float
                         writer.WriteValue(itemData.holsteredRotationOffset.z); // float
                     }
+                    Plugin.LogWarning("Sending slot to client: " + itemSlotData.slotName + " Unlocked: " + itemSlotData.slotUnlocked);
                     writer.WriteValue(itemSlotData.slotUnlocked); // bool
                 }
             }
@@ -304,7 +307,7 @@ namespace ReservedItemSlotCore.Networking
                 if (unlockedSlot)
                     SessionManager.UnlockReservedItemSlot(itemSlotData);
 
-                Plugin.Log("Receiving sync for reserved item slot data: - Slot: " + itemSlotData.slotName + " Priority: " + itemSlotData.slotPriority);
+                Plugin.Log("Receiving sync for reserved item slot data: - Slot: " + itemSlotData.slotName + " Priority: " + itemSlotData.slotPriority + " Unlocked: " + unlockedSlot);
             }
 
             UpdateReservedItemsList();

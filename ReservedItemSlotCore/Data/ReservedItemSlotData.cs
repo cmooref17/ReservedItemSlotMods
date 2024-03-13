@@ -23,7 +23,7 @@ namespace ReservedItemSlotCore.Data
         public int slotPriority = 0;
         public int purchasePrice = 200;
 
-        public bool slotUnlocked { get { return (SessionManager.unlockedReservedItemSlots != null && SessionManager.unlockedReservedItemSlots.Contains(this)) || (SessionManager.pendingUnlockedReservedItemSlots != null && SessionManager.pendingUnlockedReservedItemSlots.Contains(this)); } }
+        public bool slotUnlocked { get { return (SessionManager.unlockedReservedItemSlots != null && SessionManager.unlockedReservedItemSlotsDict.ContainsKey(slotName)) || (SessionManager.pendingUnlockedReservedItemSlots != null && SessionManager.pendingUnlockedReservedItemSlotsDict.ContainsKey(slotName)); } }
 
 
         /// <summary>

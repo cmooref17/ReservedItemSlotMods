@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 
 namespace ReservedItemSlotCore
 {
-	[BepInPlugin("FlipMods.ReservedItemSlotCore", "ReservedItemSlotCore", "2.0.0")]
+	[BepInPlugin("FlipMods.ReservedItemSlotCore", "ReservedItemSlotCore", "2.0.2")]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     internal class Plugin : BaseUnityPlugin
     {

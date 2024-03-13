@@ -39,7 +39,7 @@ namespace ReservedItemSlotCore.Patches
 
 
         [HarmonyPatch(typeof(Terminal), "BeginUsingTerminal")]
-        [HarmonyPostfix]
+        [HarmonyPrefix]
         public static void OnBeginUsingTerminal(Terminal __instance)
         {
             if (!initializedTerminalNodes && SyncManager.isSynced)
@@ -49,10 +49,12 @@ namespace ReservedItemSlotCore.Patches
 
         public static void EditExistingTerminalNodes()
         {
-            initializedTerminalNodes = true;
 
             if (!SyncManager.purchaseReservedSlotsEnabled)
                 return;
+
+            initializedTerminalNodes = true;
+
             foreach (TerminalNode node in terminalInstance.terminalNodes.specialNodes)
             {
                 if (node.name == "Start" && !node.displayText.Contains("[ReservedItemSlots]"))

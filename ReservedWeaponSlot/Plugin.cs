@@ -15,7 +15,7 @@ using ReservedWeaponSlot.Config;
 
 namespace ReservedWeaponSlot
 {
-    [BepInPlugin("FlipMods.ReservedWeaponSlot", "ReservedWeaponSlot", "1.1.0")]
+    [BepInPlugin("FlipMods.ReservedWeaponSlot", "ReservedWeaponSlot", "1.1.1")]
     [BepInDependency("FlipMods.ReservedItemSlotCore", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
