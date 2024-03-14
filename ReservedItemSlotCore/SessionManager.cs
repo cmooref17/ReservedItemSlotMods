@@ -28,7 +28,6 @@ namespace ReservedItemSlotCore
 
         public static bool preGame = true;
 
-
         [HarmonyPatch(typeof(StartOfRound), "Awake")]
         [HarmonyPrefix]
         public static void InitSession()
