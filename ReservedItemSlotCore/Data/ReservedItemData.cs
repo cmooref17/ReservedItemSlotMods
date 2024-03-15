@@ -13,13 +13,14 @@ namespace ReservedItemSlotCore.Data
 
         public List<ReservedItemSlotData> parentItemSlots = new List<ReservedItemSlotData>();
         public string itemName = "";
+        //internal string actualItemName = "";
 
         public bool showOnPlayerWhileHolstered { get { return holsteredParentBone != PlayerBone.None; } }
         public PlayerBone holsteredParentBone;
         public Vector3 holsteredPositionOffset = Vector3.zero;
         public Vector3 holsteredRotationOffset = Vector3.zero;
 
-
+        /*
         public static ReservedItemData RegisterReservedItem(string itemName, PlayerBone holsteredParentBone = 0, Vector3 holsteredPositionOffset = default, Vector3 holsteredRotationOffset = default)
         {
             if (allReservedItems.TryGetValue(itemName, out var reservedItemData))
@@ -42,11 +43,14 @@ namespace ReservedItemSlotCore.Data
             }
             allReservedItems.Add(reservedItemData.itemName, reservedItemData);
         }
+        */
+
+        //public static string CleanItemName(string itemName) => itemName.ToLower().Replace("_", " ").Replace("-", " ");
 
 
         public ReservedItemData(string itemName, PlayerBone holsteredParentBone = 0, Vector3 holsteredPositionOffset = default, Vector3 holsteredRotationOffset = default)
         {
-            this.itemName = itemName;
+            this.itemName = itemName; //.ToLower().Replace("_", " ").Replace("-", " ");
             this.holsteredParentBone = holsteredParentBone;
             this.holsteredPositionOffset = holsteredPositionOffset;
             this.holsteredRotationOffset = holsteredRotationOffset;

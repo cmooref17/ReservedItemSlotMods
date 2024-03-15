@@ -66,7 +66,8 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPostfix]
         public static void CheckForChangedInventorySize(PlayerControllerB __instance)
         {
-            if (SessionManager.preGame)
+            //if (SessionManager.preGame) return;
+            if (!SyncManager.isSynced)
                 return;
 
             var playerData = allPlayerData[__instance];
@@ -134,6 +135,7 @@ namespace ReservedItemSlotCore.Patches
             if ((!SyncManager.isSynced && !SyncManager.canUseModDisabledOnHost) || !HUDPatcher.hasReservedItemSlotsAndEnabled)
                 return true;
 
+            ReservedPlayerData.localPlayerData.grabbingReservedItemSlotData = null;
             ReservedPlayerData.localPlayerData.grabbingReservedItemData = null;
             ReservedPlayerData.localPlayerData.grabbingReservedItem = null;
             ReservedPlayerData.localPlayerData.previousHotbarIndex = -1;
@@ -185,31 +187,34 @@ namespace ReservedItemSlotCore.Patches
             if ((!SyncManager.isSynced && !SyncManager.canUseModDisabledOnHost) || !NetworkHelper.IsClientExecStage(__instance))
                 return;
 
-            var playerData = ReservedPlayerData.allPlayerData[__instance];
+            if (!ReservedPlayerData.allPlayerData.TryGetValue(__instance, out var playerData))
+                return;
+
+            Plugin.LogWarning("AAA PlayerData: " + playerData.playerController.playerUsername);
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 if (grabValidated && grabbedObject.TryGet(out NetworkObject networkObject))
                 {
                     GrabbableObject grabbingObject = networkObject.GetComponent<GrabbableObject>();
+                    Plugin.LogWarning("CCC Null? " + (grabbingObject == null));
                     if (SessionManager.TryGetUnlockedItemData(grabbingObject, out var grabbingItemData))
                     {
-                        var grabbingReservedItemSlotData = playerData.GetFirstEmptySlotForItem(grabbingItemData.itemName);
+                        Plugin.LogWarning("DDD ItemData: " + grabbingItemData.itemName);
+                        var grabbingReservedItemSlotData = playerData.GetFirstEmptySlotForReservedItem(grabbingItemData.itemName);
                         if (grabbingReservedItemSlotData != null)
                         {
-                            ReservedPlayerData.localPlayerData.grabbingReservedItemSlotData = ReservedPlayerData.localPlayerData.GetFirstEmptySlotForItem(grabbingItemData.itemName);
-                            if (ReservedPlayerData.localPlayerData.grabbingReservedItemSlotData != null)
-                            {
-                                Plugin.Log("OnGrabReservedItem for Player: " + __instance.name + " Item: " + grabbingItemData);
-                                playerData.grabbingReservedItemSlotData = grabbingReservedItemSlotData;
-                                playerData.grabbingReservedItemData = grabbingItemData;
-                                playerData.grabbingReservedItem = grabbingObject;
-                                playerData.previousHotbarIndex = __instance.currentItemSlot;
-                                return;
-                            }
+                            playerData.grabbingReservedItemSlotData = grabbingReservedItemSlotData;
+                            Plugin.LogWarning("EEE ReservedSlotIndex: " + grabbingReservedItemSlotData.GetReservedItemSlotIndex());
+                            playerData.grabbingReservedItemSlotData = grabbingReservedItemSlotData;
+                            playerData.grabbingReservedItemData = grabbingItemData;
+                            playerData.grabbingReservedItem = grabbingObject;
+                            playerData.previousHotbarIndex = __instance.currentItemSlot;
+                            return;
                         }
                     }
                 }
             }
+            playerData.grabbingReservedItemSlotData = null;
             playerData.grabbingReservedItemData = null;
             playerData.grabbingReservedItem = null;
             playerData.previousHotbarIndex = -1;
@@ -247,6 +252,8 @@ namespace ReservedItemSlotCore.Patches
                         {
                             SwitchToItemSlot(__instance, playerData.previousHotbarIndex, null);
                             __instance.playerBodyAnimator.Play(__instance.playerBodyAnimator.GetCurrentAnimatorStateInfo(2).shortNameHash, 2, 1);
+
+                            playerData.grabbingReservedItemSlotData = null;
                             playerData.grabbingReservedItemData = null;
                             playerData.grabbingReservedItem = null;
                             playerData.previousHotbarIndex = -1;
@@ -278,6 +285,7 @@ namespace ReservedItemSlotCore.Patches
                 }
             }
 
+            playerData.grabbingReservedItemSlotData = null;
             playerData.grabbingReservedItemData = null;
             playerData.grabbingReservedItem = null;
             playerData.previousHotbarIndex = -1;
@@ -292,6 +300,7 @@ namespace ReservedItemSlotCore.Patches
             {
                 yield return new WaitForEndOfFrame();
                 SwitchToItemSlot(localPlayerController, ReservedPlayerData.localPlayerData.previousHotbarIndex, null);
+                ReservedPlayerData.localPlayerData.grabbingReservedItemSlotData = null;
                 ReservedPlayerData.localPlayerData.grabbingReservedItemData = null;
                 ReservedPlayerData.localPlayerData.grabbingReservedItem = null;
                 ReservedPlayerData.localPlayerData.previousHotbarIndex = -1;
@@ -342,12 +351,13 @@ namespace ReservedItemSlotCore.Patches
             var grabbingItemData = playerData.grabbingReservedItemData;
             if (grabbingItemData != null)
             {
-                var reservedItemSlot = playerData.GetFirstEmptySlotForItem(grabbingItemData.itemName);
+                var reservedItemSlot = playerData.GetFirstEmptySlotForReservedItem(grabbingItemData.itemName);
                 if (reservedItemSlot != null)
                 {
                     __result = playerData.reservedHotbarStartIndex + reservedItemSlot.GetReservedItemSlotIndex();
                     return;
                 }
+                playerData.grabbingReservedItemSlotData = null;
                 playerData.grabbingReservedItemData = null;
                 playerData.grabbingReservedItem = null;
                 playerData.previousHotbarIndex = -1;
@@ -384,7 +394,7 @@ namespace ReservedItemSlotCore.Patches
             ReservedItemSlotData reservedItemSlot = null;
             if (__result >= playerData.reservedHotbarStartIndex && __result < playerData.reservedHotbarStartIndex + reservedHotbarSize)
             {
-                reservedItemSlot = SessionManager.unlockedReservedItemSlots[__result - playerData.reservedHotbarStartIndex];
+                reservedItemSlot = SessionManager.GetUnlockedReservedItemSlot(__result - playerData.reservedHotbarStartIndex);
                 if (inReservedHotbar && playerData.inReservedHotbarSlots && ReservedHotbarManager.isToggledInReservedSlots && !ConfigSettings.toggleFocusReservedHotbar.Value && (!ReservedHotbarManager.currentlyToggledItemSlots.Contains(reservedItemSlot) || __instance.ItemSlots[__result] == null))
                     switchToReservedItemSlot = false;
             }

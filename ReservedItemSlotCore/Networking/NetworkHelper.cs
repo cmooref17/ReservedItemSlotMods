@@ -8,7 +8,7 @@ using Unity.Netcode;
 
 namespace ReservedItemSlotCore.Networking
 {
-    public static class NetworkHelper
+    internal static class NetworkHelper
     {
         static int NONE_EXEC_STAGE = 0;
         static int SERVER_EXEC_STAGE = 1;

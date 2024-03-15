@@ -21,8 +21,8 @@ namespace ReservedWalkieSlot.Config
             Plugin.Log("BindingConfigs");
 
             hideWalkieMeshShoulder = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "HideWalkieOnShoulder", false, "Hides the walkie mesh while on your shoulder. Only applies in scenarios where you can view your player in third person."));
-            overrideItemSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideWalkieSlotPriority", 100, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
-            overridePurchasePrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideWalkieSlotPrice", 150, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
+            overrideItemSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "WalkieSlotPriorityOverride", 150, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
+            overridePurchasePrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "WalkieSlotPriceOverride", 150, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
             additionalItemsInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalItemsInSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
 
             additionalItemsInSlot.Value = additionalItemsInSlot.Value.Replace(", ", ",");
@@ -38,15 +38,7 @@ namespace ReservedWalkieSlot.Config
         }
 
 
-        public static string[] ParseAdditionalItems()
-        {
-            if (additionalItemsInSlot.Value == "")
-                return new string[0];
-
-            List<string> additionalItemNames = new List<string>(additionalItemsInSlot.Value.Split(','));
-            additionalItemNames = additionalItemNames.Where(s => s.Length >= 1).ToList();
-            return additionalItemNames.ToArray();
-        }
+        public static string[] ParseAdditionalItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(additionalItemsInSlot.Value);
 
 
         public static void TryRemoveOldConfigSettings()

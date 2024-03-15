@@ -10,6 +10,7 @@ using ReservedItemSlotCore.Patches;
 using ReservedItemSlotCore.Data;
 using System.Linq;
 using System;
+using System.Collections;
 
 
 namespace ReservedItemSlotCore.Networking
@@ -17,23 +18,27 @@ namespace ReservedItemSlotCore.Networking
     [HarmonyPatch]
     internal static class SyncManager
     {
-        public static PlayerControllerB localPlayerController;
-        public static bool isSynced = false;
-        public static bool purchaseReservedSlotsEnabled = false;
+        public static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
+        public static bool enablePurchasingItemSlots = false;
         public static bool canUseModDisabledOnHost { get { return ConfigSettings.forceEnableThisModIfNotEnabledOnHost.Value; } }
+
+        public static bool isSynced = false;
+        static bool requestedSyncHeldObjects = false;
 
         public static List<ReservedItemSlotData> unlockableReservedItemSlots = new List<ReservedItemSlotData>();
         public static Dictionary<string, ReservedItemSlotData> unlockableReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
+
+        private static List<ReservedItemSlotData> pendingUnlockedItemSlots = new List<ReservedItemSlotData>();
 
         public static List<ReservedItemData> reservedItems = new List<ReservedItemData>();
         public static Dictionary<string, ReservedItemData> reservedItemsDict = new Dictionary<string, ReservedItemData>();
         
 
-        public static bool IsReservedItem(string itemSlotName)
+        public static bool IsReservedItem(string itemName)
         {
             foreach (var itemSlot in unlockableReservedItemSlots)
             {
-                if (itemSlot.ContainsItem(itemSlotName))
+                if (itemSlot.ContainsItem(itemName))
                     return true;
             }
             return false;
@@ -42,10 +47,16 @@ namespace ReservedItemSlotCore.Networking
 
         [HarmonyPatch(typeof(StartOfRound), "Awake")]
         [HarmonyPrefix]
-        public static void ResetValues()
+        public static void ResetValues(StartOfRound __instance)
         {
             isSynced = false;
-            localPlayerController = null;
+            requestedSyncHeldObjects = false;
+            unlockableReservedItemSlots?.Clear();
+            unlockableReservedItemSlotsDict?.Clear();
+            enablePurchasingItemSlots = false;
+            pendingUnlockedItemSlots?.Clear();
+            reservedItems?.Clear();
+            reservedItemsDict?.Clear();
         }
 
 
@@ -53,15 +64,9 @@ namespace ReservedItemSlotCore.Networking
         [HarmonyPostfix]
         public static void Init(PlayerControllerB __instance)
         {
-            localPlayerController = __instance;
-
-
             if (NetworkManager.Singleton.IsServer)
             {
-                isSynced = true;
-                purchaseReservedSlotsEnabled = !ConfigSettings.disablePurchasingReservedSlots.Value;
-
-                Plugin.LogWarning("purchaseReservedSlotsEnabled: " + purchaseReservedSlotsEnabled);
+                enablePurchasingItemSlots = ConfigSettings.enablePurchasingItemSlots.Value;
 
                 //unlockableReservedItemSlotsDict = ReservedItemSlotData.allReservedItemSlotData; // reservedItemsDict;
                 //unlockableReservedItemSlots = unlockableReservedItemSlotsDict.Values.ToList();
@@ -77,15 +82,20 @@ namespace ReservedItemSlotCore.Networking
                     
                     AddReservedItemSlotData(newReservedItemSlot);
 
-                    if (!purchaseReservedSlotsEnabled)
+                    if (!enablePurchasingItemSlots)
                         SessionManager.UnlockReservedItemSlot(reservedItemSlot);
                 }
 
-                SessionManager.LoadGameValues();
+                if (enablePurchasingItemSlots)
+                    SessionManager.LoadGameValues();
+
+                isSynced = true;
+                OnSyncedWithServer();
 
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.OnSwapHotbarServerRpc", OnSwapHotbarServerRpc);
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.RequestSyncServerRpc", RequestSyncServerRpc);
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.OnUnlockItemSlotServerRpc", OnUnlockItemSlotServerRpc);
+                NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.RequestSyncHeldObjectsServerRpc", RequestSyncHeldObjectsServerRpc);
             }
             else
             {
@@ -95,6 +105,7 @@ namespace ReservedItemSlotCore.Networking
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.OnSwapHotbarClientRpc", OnSwapHotbarClientRpc);
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.RequestSyncClientRpc", RequestSyncClientRpc);
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.OnUnlockItemSlotClientRpc", OnUnlockItemSlotClientRpc);
+                NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.RequestSyncHeldObjectsClientRpc", RequestSyncHeldObjectsClientRpc);
 
                 RequestSyncFromServer();
             }
@@ -148,7 +159,6 @@ namespace ReservedItemSlotCore.Networking
 
             Plugin.Log("Requesting sync with server.");
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ReservedItemSlotCore.RequestSyncServerRpc", NetworkManager.ServerClientId, new FastBufferWriter(0, Allocator.Temp));
-            return;
         }
 
 
@@ -199,7 +209,7 @@ namespace ReservedItemSlotCore.Networking
             }
 
             var writer = new FastBufferWriter(sizeof(bool) + sizeItemInfos, Allocator.Temp);
-            writer.WriteValue(purchaseReservedSlotsEnabled); // bool
+            writer.WriteValue(enablePurchasingItemSlots); // bool
             writer.WriteValue(unlockableReservedItemSlots.Count); // int
 
             foreach (var itemSlotData in unlockableReservedItemSlots)
@@ -229,10 +239,11 @@ namespace ReservedItemSlotCore.Networking
                         writer.WriteValue(itemData.holsteredRotationOffset.y); // float
                         writer.WriteValue(itemData.holsteredRotationOffset.z); // float
                     }
-                    Plugin.LogWarning("Sending slot to client: " + itemSlotData.slotName + " Unlocked: " + itemSlotData.slotUnlocked);
-                    writer.WriteValue(itemSlotData.slotUnlocked); // bool
+                    Plugin.LogWarning("Sending slot to client: " + itemSlotData.slotName + " Unlocked: " + itemSlotData.isUnlocked);
+                    writer.WriteValue(itemSlotData.isUnlocked); // bool
                 }
             }
+
 
             if (sendToAllClients)
             {
@@ -253,14 +264,12 @@ namespace ReservedItemSlotCore.Networking
             if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
                 return;
 
-            isSynced = true;
-
             unlockableReservedItemSlots = new List<ReservedItemSlotData>();
             unlockableReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
 
             Plugin.Log("Receiving sync from server.");
 
-            reader.ReadValue(out purchaseReservedSlotsEnabled);
+            reader.ReadValue(out enablePurchasingItemSlots);
             reader.ReadValue(out int numEntries);
             for (int i = 0; i < numEntries; i++)
             {
@@ -311,7 +320,157 @@ namespace ReservedItemSlotCore.Networking
             }
 
             UpdateReservedItemsList();
+            OnSyncedWithServer();
+
             Plugin.Log("Received sync for " + unlockableReservedItemSlotsDict.Count + " reserved item slots.");
+        }
+
+
+        private static void OnSyncedWithServer()
+        {
+            isSynced = true;
+            foreach (var item in StartOfRound.Instance.allItemsList.itemsList)
+            {
+                if (IsReservedItem(item.itemName))
+                    item.canBeGrabbedBeforeGameStart = true;
+            }
+            localPlayerController.StartCoroutine(OnSyncedWithServerDelayed());
+        }
+
+
+        private static IEnumerator OnSyncedWithServerDelayed()
+        {
+            yield return new WaitForSeconds(3f);
+
+            foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
+            {
+                playerData.hotbarSize = playerData.itemSlots.Length;
+                playerData.reservedHotbarStartIndex = playerData.hotbarSize;
+            }
+
+            if (!NetworkManager.Singleton.IsServer)
+                RequestSyncHeldObjects();
+            SessionManager.UnlockAllPendingItemSlots();
+        }
+
+
+
+
+        private static void RequestSyncHeldObjects()
+        {
+            if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
+                return;
+
+            requestedSyncHeldObjects = true;
+            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ReservedItemSlotCore.RequestSyncHeldObjectsServerRpc", NetworkManager.ServerClientId, new FastBufferWriter(0, Allocator.Temp));
+        }
+
+
+        // ServerRpc
+        private static void RequestSyncHeldObjectsServerRpc(ulong clientId, FastBufferReader reader)
+        {
+            if (!NetworkManager.Singleton.IsServer)
+                return;
+
+            int sizePlayerInfos = sizeof(int); // num players
+            int syncPlayerItems = 0;
+            foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
+            {
+                if (playerData.playerController.actualClientId == clientId)
+                    continue;
+
+                int numHeldReservedItems = playerData.GetNumHeldReservedItems();
+                if (numHeldReservedItems > 0)
+                {
+                    syncPlayerItems++;
+                    sizePlayerInfos += sizeof(int); // currently selected reserved item index
+                    sizePlayerInfos += sizeof(int); // num held reserved items
+                    sizePlayerInfos += (sizeof(int) + sizeof(ulong)) * numHeldReservedItems; // index in inventory + network reference id
+                }
+            }
+
+            var writer = new FastBufferWriter(sizePlayerInfos, Allocator.Temp);
+            writer.WriteValue(syncPlayerItems);
+
+            foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
+            {
+                if (playerData.playerController.actualClientId == clientId)
+                    continue;
+
+                int numHeldReservedItems = playerData.GetNumHeldReservedItems();
+                if (numHeldReservedItems > 0)
+                {
+                    writer.WriteValue(playerData.playerController.actualClientId); // ulong
+                    writer.WriteValue(playerData.currentItemSlotIsReserved ? playerData.currentItemSlot - playerData.reservedHotbarStartIndex : -1); // int
+                    writer.WriteValue(numHeldReservedItems); // int
+                    
+                    for (int i = playerData.reservedHotbarStartIndex; i < playerData.reservedHotbarEndIndexExcluded; i++)
+                    {
+                        var item = playerData.itemSlots[i];
+                        if (item != null)
+                        {
+                            writer.WriteValue(i - playerData.reservedHotbarStartIndex); // int
+                            writer.WriteValue(item.NetworkObjectId); // ulong
+                        }
+                    }
+                }
+            }
+
+            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ReservedItemSlotCore.RequestSyncHeldObjectsClientRpc", clientId, writer, NetworkDelivery.ReliableFragmentedSequenced);
+        }
+
+
+        // ClientRpc
+        private static void RequestSyncHeldObjectsClientRpc(ulong clientId, FastBufferReader reader)
+        {
+            if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
+                return;
+
+            reader.ReadValue(out int numPlayersToSyncItems);
+            for (int i = 0; i < numPlayersToSyncItems; i++)
+            {
+                reader.ReadValue(out ulong syncingClientId);
+                reader.ReadValue(out int selectedReservedItemSlot);
+                reader.ReadValue(out int numHeldReservedItems);
+
+                var playerController = GetPlayerControllerByClientId(syncingClientId);
+                ReservedPlayerData playerData = null;
+                if (playerController != null)
+                    ReservedPlayerData.allPlayerData.TryGetValue(playerController, out playerData);
+
+                for (int j = 0; j < numHeldReservedItems; j++)
+                {
+                    reader.ReadValue(out int reservedItemSlotIndex);
+                    reader.ReadValue(out ulong networkObjectId);
+                    var grabbableObject = GetGrabbableObjectByNetworkId(networkObjectId);
+
+                    if (playerData != null && reservedItemSlotIndex >= 0 && reservedItemSlotIndex < SessionManager.numReservedItemSlotsUnlocked && grabbableObject != null)
+                    {
+                        int indexInInventory = reservedItemSlotIndex + playerData.reservedHotbarStartIndex;
+                        grabbableObject.isHeld = true;
+                        playerData.itemSlots[indexInInventory] = grabbableObject;
+                        grabbableObject.parentObject = playerController.serverItemHolder;
+                        grabbableObject.playerHeldBy = playerController;
+                        bool currentlySelected = selectedReservedItemSlot == reservedItemSlotIndex;
+
+                        grabbableObject.EnablePhysics(false);
+
+                        if (currentlySelected)
+                        {
+                            grabbableObject.EquipItem();
+                            playerController.currentlyHeldObjectServer = grabbableObject;
+                            playerController.isHoldingObject = true;
+                            playerController.twoHanded = grabbableObject.itemProperties.twoHanded;
+                            playerController.twoHandedAnimation = grabbableObject.itemProperties.twoHandedAnimation;
+                            playerController.currentItemSlot = indexInInventory;
+                        }
+                        else
+                        {
+                            grabbableObject.PocketItem();
+                        }
+                    }
+                }
+            }
         }
 
 
@@ -385,7 +544,7 @@ namespace ReservedItemSlotCore.Networking
 
 
 
-        static void SendSwapHotbarUpdateToServer(int hotbarSlot)
+        private static void SendSwapHotbarUpdateToServer(int hotbarSlot)
         {
             if (!NetworkManager.Singleton.IsClient)
                 return;
@@ -397,7 +556,7 @@ namespace ReservedItemSlotCore.Networking
 
 
         // ServerRpc
-        static void OnSwapHotbarServerRpc(ulong clientId, FastBufferReader reader)
+        private static void OnSwapHotbarServerRpc(ulong clientId, FastBufferReader reader)
         {
             if (!NetworkManager.Singleton.IsServer)
                 return;
@@ -412,7 +571,7 @@ namespace ReservedItemSlotCore.Networking
         }
 
 
-        public static void SendSwapHotbarUpdateToClients(ulong clientId, int hotbarIndex)
+        internal static void SendSwapHotbarUpdateToClients(ulong clientId, int hotbarIndex)
         {
             if (!NetworkManager.Singleton.IsServer)
                 return;
@@ -425,7 +584,7 @@ namespace ReservedItemSlotCore.Networking
 
 
         // ClientRpc
-        static void OnSwapHotbarClientRpc(ulong clientId, FastBufferReader reader)
+        private static void OnSwapHotbarClientRpc(ulong clientId, FastBufferReader reader)
         {
             if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
                 return;
@@ -440,7 +599,7 @@ namespace ReservedItemSlotCore.Networking
         }
 
 
-        static bool TryUpdateClientHotbarSlot(ulong clientId, int hotbarSlot)
+        private static bool TryUpdateClientHotbarSlot(ulong clientId, int hotbarSlot)
         {
             for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
             {
@@ -455,6 +614,10 @@ namespace ReservedItemSlotCore.Networking
         }
 
 
+        /// <summary>
+        /// Swaps hotbar slots on your local player, and sends this to the server as well.
+        /// </summary>
+        /// <param name="hotbarIndex"></param>
         public static void SwapHotbarSlot(int hotbarIndex)
         {
             SendSwapHotbarUpdateToServer(hotbarIndex);
@@ -462,7 +625,7 @@ namespace ReservedItemSlotCore.Networking
         }
 
 
-        static void CallSwitchToItemSlotMethod(PlayerControllerB playerController, int hotbarIndex)
+        internal static void CallSwitchToItemSlotMethod(PlayerControllerB playerController, int hotbarIndex)
         {
             if (playerController == null || playerController.ItemSlots == null || hotbarIndex < 0 || hotbarIndex >= playerController.ItemSlots.Length)
                 return;
@@ -474,6 +637,26 @@ namespace ReservedItemSlotCore.Networking
             PlayerPatcher.SwitchToItemSlot(playerController, hotbarIndex);
             if (playerController.currentlyHeldObjectServer != null)
                 playerController.currentlyHeldObjectServer.gameObject.GetComponent<AudioSource>().PlayOneShot(playerController.currentlyHeldObjectServer.itemProperties.grabSFX, 0.6f);
+        }
+
+
+        internal static PlayerControllerB GetPlayerControllerByClientId(ulong clientId)
+        {
+            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+            {
+                var playerController = StartOfRound.Instance.allPlayerScripts[i];
+                if (playerController.actualClientId == clientId)
+                    return playerController;
+            }
+            return null;
+        }
+
+
+        internal static GrabbableObject GetGrabbableObjectByNetworkId(ulong networkObjectId)
+        {
+            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out var networkObject))
+                return networkObject.GetComponentInChildren<GrabbableObject>();
+            return null;
         }
     }
 }

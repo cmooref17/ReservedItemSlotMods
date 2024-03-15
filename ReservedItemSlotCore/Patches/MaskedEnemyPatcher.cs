@@ -14,7 +14,7 @@ using GameNetcodeStuff;
 namespace ReservedItemSlotCore.Patches
 {
     [HarmonyPatch]
-    public class MaskedEnemyPatcher
+    internal class MaskedEnemyPatcher
     {
         //public static Dictionary<MaskedPlayerEnemy, MaskedEnemyData> heldReservedItemsByMaskedEnemy = new Dictionary<MaskedPlayerEnemy, List<GameObject>>();
         //public static HashSet<MaskedPlayerEnemy> spawnedEnemies = new HashSet<MaskedPlayerEnemy>();
@@ -73,7 +73,7 @@ namespace ReservedItemSlotCore.Patches
 
                 int reservedItemIndex = i - playerData.reservedHotbarStartIndex;
                 var reservedItemSlot = SessionManager.unlockedReservedItemSlots[reservedItemIndex];
-                var reservedItem = reservedItemSlot.GetReservedItem(heldItem);
+                var reservedItem = reservedItemSlot.GetReservedItemData(heldItem);
                 if (reservedItem.holsteredParentBone == PlayerBone.None)
                     continue;
 
@@ -130,55 +130,5 @@ namespace ReservedItemSlotCore.Patches
                     GameObject.DestroyImmediate(monoBehaviour);
             }
         }
-
-        /*
-        [HarmonyPatch(typeof(MaskedPlayerEnemy), "LateUpdate")]
-        [HarmonyPostfix]
-        public static void LateUpdate(MaskedPlayerEnemy __instance)
-        {
-            if (!spawnedEnemies.Contains(__instance) && SyncManager.syncReservedItemsList.Contains(Plugin.proFlashlightInfo) && !__instance.isEnemyDead && !heldReservedItemsByMaskedEnemy.ContainsKey(__instance) && __instance.mimickingPlayer != null && ReservedPlayerData.allPlayerData.TryGetValue(__instance.mimickingPlayer, out var playerData))
-            {
-                spawnedEnemies.Add(__instance);
-                var flashlight = FlashlightPatcher.GetReservedFlashlight(playerData.playerController);
-                if (flashlight != null)
-                {
-                    Plugin.LogWarning("OnMaskedEnemySpawn - MimickingPlayer: " + playerData.playerController.name + " - Spawning flashlight object on enemy.");
-
-                    GameObject newFlashlightObject = new GameObject("ReservedFlashlight [MaskedEnemy]");
-                    var lights = flashlight.GetComponentsInChildren<Light>();
-                    var meshRenderer = flashlight.mainObjectRenderer;
-                    foreach (var light in lights)
-                    {
-                        var newLight = GameObject.Instantiate(light.gameObject, light.transform.localPosition, light.transform.localRotation, newFlashlightObject.transform).GetComponent<Light>();
-                        newLight.enabled = true;
-                        newLight.gameObject.layer = 6;
-                    }
-                    var newMeshRenderer = GameObject.Instantiate(meshRenderer.gameObject, meshRenderer.transform.localPosition, meshRenderer.transform.localRotation, newFlashlightObject.transform).GetComponent<MeshRenderer>();
-                    newMeshRenderer.enabled = true;
-                    newMeshRenderer.gameObject.layer = 6;
-                    newFlashlightObject.transform.localScale = flashlight.transform.localScale;
-
-                    heldReservedItemsByMaskedEnemy.Add(__instance, newFlashlightObject);
-                }
-            }
-
-            if (heldReservedItemsByMaskedEnemy.TryGetValue(__instance, out var flashlightObject))
-            {
-                if (__instance.isEnemyDead)
-                {
-                    Plugin.LogWarning("Destroying flashlight. Enemy dead.");
-                    GameObject.DestroyImmediate(flashlightObject);
-                    spawnedEnemies.Remove(__instance);
-                    heldReservedItemsByMaskedEnemy.Remove(__instance);
-                }
-                else
-                {
-                    Transform parent = __instance.eye.parent.parent;
-                    flashlightObject.transform.rotation = parent.rotation * Quaternion.Euler(FlashlightPatcher.playerShoulderRotationOffset);
-                    flashlightObject.transform.position = parent.position + parent.rotation * FlashlightPatcher.playerShoulderPositionOffset;
-                }
-            }
-        }
-        */
     }
 }

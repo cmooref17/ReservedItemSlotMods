@@ -17,22 +17,29 @@ using System.Reflection;
 using System.Collections;
 using System.Linq;
 using System.Runtime.InteropServices;
+using ReservedItemSlotCore.Data;
+
 
 namespace ReservedItemSlotCore
 {
-	[BepInPlugin("FlipMods.ReservedItemSlotCore", "ReservedItemSlotCore", "2.0.2")]
+	[BepInPlugin("FlipMods.ReservedItemSlotCore", "ReservedItemSlotCore", "2.0.7")]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     internal class Plugin : BaseUnityPlugin
     {
 		Harmony _harmony;
 		public static Plugin instance;
-        static ManualLogSource logger;
+        private static ManualLogSource logger;
+
+        public static List<ReservedItemSlotData> customItemSlots = new List<ReservedItemSlotData>();
        
-        void Awake()
+
+        private void Awake()
         {
 			instance = this;
             CreateCustomLogger();
             ConfigSettings.BindConfigSettings();
+
+            AddCustomItemSlots();
 
             if (InputUtilsCompat.Enabled)
                 InputUtilsCompat.Init();
@@ -42,7 +49,26 @@ namespace ReservedItemSlotCore
             Log("ReservedItemSlotCore loaded");
 		}
 
-        void PatchAll()
+
+        private void AddCustomItemSlots()
+        {
+            foreach (var customItemSlotConfig in ConfigSettings.customItemSlotConfigs)
+            {
+                if (customItemSlotConfig.customItemSlotName == "" || customItemSlotConfig.customItemSlotItems.Length <= 0)
+                    continue;
+
+                var customItemSlot = ReservedItemSlotData.CreateReservedItemSlotData(customItemSlotConfig.customItemSlotName, customItemSlotConfig.customItemSlotPriority, customItemSlotConfig.customItemSlotPrice);
+                foreach (var itemName in customItemSlotConfig.customItemSlotItems)
+                {
+                    var customItemData = new ReservedItemData(itemName);
+                    customItemSlot.AddItemToReservedItemSlot(customItemData);
+                    customItemSlots.Add(customItemSlot);
+                }
+            }
+        }
+
+
+        private void PatchAll()
         {
             IEnumerable<Type> types;
             try
@@ -57,7 +83,8 @@ namespace ReservedItemSlotCore
                 this._harmony.PatchAll(type);
         }
 
-        void CreateCustomLogger()
+
+        private void CreateCustomLogger()
         {
             try { logger = BepInEx.Logging.Logger.CreateLogSource(string.Format("{0}-{1}", Info.Metadata.Name, Info.Metadata.Version)); }
             catch { logger = Logger; }

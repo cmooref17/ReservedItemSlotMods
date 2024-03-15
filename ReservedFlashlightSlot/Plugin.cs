@@ -49,11 +49,7 @@ namespace ReservedFlashlightSlot
 
         void CreateReservedItemSlots()
         {
-            flashlightSlotData = ReservedItemSlotData.CreateReservedItemSlotData("flashlight", 120, 200);
-
-            // Set override values from config
-            flashlightSlotData.slotPriority = ConfigSettings.overrideItemSlotPriority.Value;
-            flashlightSlotData.purchasePrice = ConfigSettings.overridePurchasePrice.Value;
+            flashlightSlotData = ReservedItemSlotData.CreateReservedItemSlotData("flashlight", ConfigSettings.overrideItemSlotPriority.Value, ConfigSettings.overridePurchasePrice.Value);
 
             flashlightData = flashlightSlotData.AddItemToReservedItemSlot(new ReservedItemData("Flashlight", PlayerBone.Spine3, new Vector3(0.2f, 0.25f, 0), new Vector3(90, 0, 0)));
             proFlashlightData = flashlightSlotData.AddItemToReservedItemSlot(new ReservedItemData("Pro-flashlight", PlayerBone.Spine3, new Vector3(0.2f, 0.25f, 0), new Vector3(90, 0, 0)));

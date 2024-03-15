@@ -19,8 +19,8 @@ namespace ReservedItemSlotCore
     [HarmonyPatch]
     public static class ReservedHotbarManager
     {
-        static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
-        static ReservedPlayerData localPlayerData { get { return ReservedPlayerData.localPlayerData; } }
+        public static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
+        public static ReservedPlayerData localPlayerData { get { return ReservedPlayerData.localPlayerData; } }
 
         static int vanillaHotbarSize = -1;
 
@@ -29,7 +29,7 @@ namespace ReservedItemSlotCore
         public static int indexInReservedHotbar = 0;
 
         public static bool isToggledInReservedSlots { get { var currentlySelectedReservedItemSlot = localPlayerData.GetCurrentlySelectedReservedItemSlot(); return ConfigSettings.toggleFocusReservedHotbar.Value || (currentlyToggledItemSlots != null && currentlySelectedReservedItemSlot != null && currentlyToggledItemSlots.Contains(currentlySelectedReservedItemSlot)); } }
-        public static List<ReservedItemSlotData> currentlyToggledItemSlots = new List<ReservedItemSlotData>();
+        internal static List<ReservedItemSlotData> currentlyToggledItemSlots = new List<ReservedItemSlotData>();
 
 
         [HarmonyPatch(typeof(StartOfRound), "Awake")]
@@ -44,9 +44,10 @@ namespace ReservedItemSlotCore
         }
 
 
-
-
-
+        /// <summary>
+        /// For force toggling a set of reserved item slots. These slots will be toggled without needing to hold Alt, and will remain toggled until pressed again, or scrolled off of the slot.
+        /// </summary>
+        /// <param name="reservedItemSlots"></param>
         public static void ForceToggleReservedHotbar(params ReservedItemSlotData[] reservedItemSlots)
         {
             if (!localPlayerController.IsOwner || !localPlayerController.isPlayerControlled || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
@@ -70,25 +71,11 @@ namespace ReservedItemSlotCore
         }
 
 
-        public static void ForceToggleReservedHotbar(params int[] reservedItemSlots)
-        {
-            if (localPlayerController == null || !localPlayerController.IsOwner || !localPlayerController.isPlayerControlled || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
-                return;
-            if (!HUDPatcher.hasReservedItemSlotsAndEnabled || reservedHotbarSize <= 0 || !CanSwapHotbars())
-                return;
-
-            List<ReservedItemSlotData> toggledReservedItemSlots = new List<ReservedItemSlotData>();
-            foreach (int slot in reservedItemSlots)
-            {
-                if (slot < 0 || slot >= SessionManager.unlockedReservedItemSlots.Count)
-                    continue;
-
-                toggledReservedItemSlots.Add(SessionManager.unlockedReservedItemSlots[slot]);
-            }
-            ForceToggleReservedHotbar(toggledReservedItemSlots.ToArray());
-        }
-
-
+        /// <summary>
+        /// Focuses or unfocuses the reserved hotbar slots.
+        /// </summary>
+        /// <param name="active">True = Focus</param>
+        /// <param name="forceSlot">ForceSwapToInventoryIndex (optional)</param>
         public static void FocusReservedHotbarSlots(bool active, int forceSlot = -1)
         {
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled)
@@ -161,7 +148,7 @@ namespace ReservedItemSlotCore
         }
 
 
-        public static bool CanGrabReservedItem()
+        internal static bool CanGrabReservedItem()
         {
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled || localPlayerData.GetNumHeldReservedItems() == 0 || localPlayerData.isGrabbingReservedItem || (localPlayerData.inReservedHotbarSlots && !ConfigSettings.toggleFocusReservedHotbar.Value && !isToggledInReservedSlots))
                 return false;
@@ -170,7 +157,7 @@ namespace ReservedItemSlotCore
         }
 
 
-        public static void OnSwapToReservedHotbar()
+        internal static void OnSwapToReservedHotbar()
         {
             if (!localPlayerData.currentItemSlotIsReserved)
                 return;
@@ -181,7 +168,7 @@ namespace ReservedItemSlotCore
         }
 
 
-        public static void OnSwapToVanillaHotbar()
+        internal static void OnSwapToVanillaHotbar()
         {
             if (localPlayerData.currentItemSlotIsReserved)
                 return;
@@ -192,7 +179,7 @@ namespace ReservedItemSlotCore
 
         [HarmonyPatch(typeof(PlayerControllerB), "LateUpdate")]
         [HarmonyPrefix]
-        public static void RefocusReservedHotbarAfterAnimation(PlayerControllerB __instance)
+        private static void RefocusReservedHotbarAfterAnimation(PlayerControllerB __instance)
         {
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled)
                 return;
@@ -206,7 +193,7 @@ namespace ReservedItemSlotCore
 
         [HarmonyPatch(typeof(PlayerControllerB), "UpdateSpecialAnimationValue")]
         [HarmonyPostfix]
-        public static void UpdateReservedHotbarAfterAnimation(bool specialAnimation, PlayerControllerB __instance)
+        private static void UpdateReservedHotbarAfterAnimation(bool specialAnimation, PlayerControllerB __instance)
         {
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled)
                 return;

@@ -2,13 +2,14 @@
 using ReservedItemSlotCore.Networking;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 
 namespace ReservedItemSlotCore.Config
 {
     public static class ConfigSettings
     {
-        public static ConfigEntry<bool> disablePurchasingReservedSlots;
+        public static ConfigEntry<bool> enablePurchasingItemSlots;
         public static ConfigEntry<float> globalItemSlotPriceModifier;
         public static ConfigEntry<bool> forceEnableThisModIfNotEnabledOnHost;
         public static ConfigEntry<bool> displayNegativePrioritySlotsLeftSideOfScreen;
@@ -16,13 +17,17 @@ namespace ReservedItemSlotCore.Config
         public static ConfigEntry<bool> toggleFocusReservedHotbar;
         public static ConfigEntry<bool> preventReservedItemSlotFade;
 
+        public static ConfigEntry<int> numCustomItemSlots;
+        public static List<CustomItemSlotConfigEntry> customItemSlotConfigs = new List<CustomItemSlotConfigEntry>();
+
         public static Dictionary<string, ConfigEntryBase> currentConfigEntries = new Dictionary<string, ConfigEntryBase>();
+
 
         public static void BindConfigSettings()
         {
             Plugin.Log("BindingConfigs");
 
-            disablePurchasingReservedSlots = AddConfigEntry(Plugin.instance.Config.Bind("Server", "DisablePurchasingReservedSlots", false, "[Host only] By default, you will have to unlock reserved item slots by purchasing them from the terminal. Setting this to true will disable this, and players will start the game with all available reserved item slots."));
+            enablePurchasingItemSlots = AddConfigEntry(Plugin.instance.Config.Bind("Server", "EnablePurchasingItemSlots", false, "[Host only] Set to true to enable purchasing reserved item slots. If set to false, all players will start the game with all available reserved item slots."));
             globalItemSlotPriceModifier = AddConfigEntry(Plugin.instance.Config.Bind("Server", "GlobalItemSlotPriceModifier", 1f, "[Host only] All reserved item slot prices will scale with this value."));
             forceEnableThisModIfNotEnabledOnHost = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ForceEnableThisModIfNotEnabledOnHost", false, "This is disabled by default for a reason, and it is NOT recommended to enable this, especially in public lobbies. Enabling this when the host does not have the ReservedItemSlotCore mod CAN, and likely WILL cause de-sync issues. You have been warned. This setting only applies if you are a non-host client, and the host does not have this mod."));
             displayNegativePrioritySlotsLeftSideOfScreen = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "DisplayNegativePrioritySlotsLeftSideOfScreen", true, "For any reserved item slot mods that have a negative priority, by default, those slots will appear on the left side of the screen, rather than the right. Setting this option to false will have them appear on top of the slots on the right side."));
@@ -30,8 +35,33 @@ namespace ReservedItemSlotCore.Config
             toggleFocusReservedHotbar = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ToggleFocusReservedHotbar", false, "If set to true, swapping to the reserved hotbar slots will be toggled when pressing the hotkey rather than while holding the hotkey. Setting this option to true may have bugs at this current time."));
             preventReservedItemSlotFade = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "PreventReservedHotbarSlotFade", false, "If true, the reserved hotbar slots will not fade with the rest of the default slots."));
 
+            numCustomItemSlots = AddConfigEntry(Plugin.instance.Config.Bind("Custom Reserved Item Slots", "NumCustomItemSlots", 1, "[Host only] Set the number of custom reserved item slots you want to add. Custom slots will update in the config when you start the game."));
+            for (int i = 0; i < numCustomItemSlots.Value; i++)
+            {
+                ConfigEntry<string> customItemSlotName = AddConfigEntry(Plugin.instance.Config.Bind("CustomReservedItemSlot " + (i + 1), "ItemSlotName " + (i + 1), "custom_item_slot_" + (i + 1), "[Host only] Make the name of this slot unique. This name is usually only seen in the terminal. This slot will not be created if left blank."));
+                ConfigEntry<string> customItemSlotItems = AddConfigEntry(Plugin.instance.Config.Bind("CustomReservedItemSlot " + (i + 1), "ItemsInSlot " + (i + 1), "", "[Host only] Syntax: \"Flashlight,Walkie-talkie\" (without quotes). When adding items, use the item's name as it appears in game. The names are CASE-SENSITIVE. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
+                ConfigEntry<int> customItemSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("CustomReservedItemSlot " + (i + 1), "ItemSlotPriority " + (i + 1), 20, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
+                ConfigEntry<int> customItemSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("CustomReservedItemSlot " + (i + 1), "ItemSlotPrice " + (i + 1), 0, "[Host only] Only applies if purchasing item slots in the terminal is enabled in the core config. Setting 0 will force this item to be unlocked immediately after the game starts."));
+
+                var customConfigEntry = new CustomItemSlotConfigEntry(customItemSlotName.Value, ParseItemNames(customItemSlotItems.Value), customItemSlotPriority.Value, customItemSlotPrice.Value);
+
+                if (customConfigEntry.customItemSlotName != "" && customConfigEntry.customItemSlotItems.Length > 0)
+                    customItemSlotConfigs.Add(customConfigEntry);
+            }
+
             TryRemoveOldConfigSettings();
             //ConfigSync.BuildDefaultConfigSync();
+        }
+
+
+        public static string[] ParseItemNames(string itemNamesRaw)
+        {
+            if (itemNamesRaw == "")
+                return new string[0];
+
+            List<string> itemNames = new List<string>(itemNamesRaw.Split(','));
+            itemNames = itemNames.Where(s => s.Length >= 1).ToList();
+            return itemNames.ToArray();
         }
 
 
@@ -125,6 +155,23 @@ namespace ReservedItemSlotCore.Config
                 }
             }
             catch { } // Probably okay
+        }
+    }
+
+
+    public class CustomItemSlotConfigEntry
+    {
+        public string customItemSlotName;
+        public string[] customItemSlotItems;
+        public int customItemSlotPriority;
+        public int customItemSlotPrice;
+
+        public CustomItemSlotConfigEntry(string customItemSlotName, string[] customItemSlotItems, int customItemSlotPriority, int customItemSlotPrice)
+        {
+            this.customItemSlotName = customItemSlotName;
+            this.customItemSlotItems = customItemSlotItems;
+            this.customItemSlotPriority = customItemSlotPriority;
+            this.customItemSlotPrice = customItemSlotPrice;
         }
     }
 }

@@ -14,7 +14,7 @@ using ReservedItemSlotCore.Data;
 namespace ReservedItemSlotCore.Patches
 {
     [HarmonyPatch]
-    public static class MouseScrollPatcher
+    internal static class MouseScrollPatcher
     {
         public static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
 
@@ -41,7 +41,7 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPrefix]
         public static bool PreventInvertedScrollingReservedHotbar(InputAction.CallbackContext context)
         {
-            if (StartOfRound.Instance.localPlayerUsingController || SessionManager.numReservedItemSlotsUnlocked <= 0 || HUDPatcher.reservedItemSlots == null || SessionManager.preGame)
+            if (StartOfRound.Instance.localPlayerUsingController || SessionManager.numReservedItemSlotsUnlocked <= 0 || HUDPatcher.reservedItemSlots == null) // || SessionManager.preGame)
                 return true;
 
             if (ReservedPlayerData.localPlayerData.currentItemSlotIsReserved)

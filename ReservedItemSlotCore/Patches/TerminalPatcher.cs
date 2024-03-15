@@ -21,7 +21,7 @@ using ReservedItemSlotCore.Data;
 namespace ReservedItemSlotCore.Patches
 {
     [HarmonyPatch]
-    public static class TerminalPatcher
+    internal static class TerminalPatcher
     {
         public static Terminal terminalInstance;
         public static bool initializedTerminalNodes = false;
@@ -48,7 +48,8 @@ namespace ReservedItemSlotCore.Patches
 
         public static void EditExistingTerminalNodes()
         {
-            //if (!SyncManager.purchaseReservedSlotsEnabled) return;
+            if (!SyncManager.isSynced)
+                return;
 
             initializedTerminalNodes = true;
 
@@ -62,7 +63,7 @@ namespace ReservedItemSlotCore.Patches
                     {
                         insertIndex += keyword.Length;
                         string addText = "\n\n[ReservedItemSlots]\n";
-                        if (SyncManager.purchaseReservedSlotsEnabled) 
+                        if (SyncManager.enablePurchasingItemSlots) 
                             addText += "Type \"Reserved\" to purchase reserved item slots.";
                         else
                         {
@@ -75,20 +76,14 @@ namespace ReservedItemSlotCore.Patches
                         Debug.LogError("Failed to add reserved item slots tip to terminal. Maybe an update broke it?");
                 }
 
-                else if (node.name == "HelpCommands" && !node.displayText.Contains(">RESERVED"))
+                else if (SyncManager.enablePurchasingItemSlots && node.name == "HelpCommands" && !node.displayText.Contains(">RESERVED"))
                 {
                     string keyword = "[numberOfItemsOnRoute]";
                     int insertIndex = node.displayText.IndexOf(keyword);
                     if (insertIndex != -1)
                     {
                         string addText = ">RESERVED\n";
-                        if (SyncManager.purchaseReservedSlotsEnabled)
-                            addText += "Purchase reserved item slots.\n\n";
-                        else
-                        {
-                            addText += "<s>Purchase reserved item slots.</s>\n" +
-                                "[DISABLED BY HOST IN CONFIG]\n\n";
-                        }
+                        addText += "Purchase reserved item slots.\n\n";
                         node.displayText = node.displayText.Insert(insertIndex, addText);
                     }
                 }
@@ -103,13 +98,14 @@ namespace ReservedItemSlotCore.Patches
             if (modifiedDisplayText.Length <= 0)
                 return;
 
-            if (modifiedDisplayText.Contains("[[[reservedItemSlotsSelectionList]]]") || (modifiedDisplayText.Contains("[[[") && modifiedDisplayText.Contains("]]]")))
+            string placeholderText = "[[[reservedItemSlotsSelectionList]]]";
+            if (modifiedDisplayText.Contains(placeholderText))
             {
-                int index0 = modifiedDisplayText.IndexOf("[[[");
-                int index1 = modifiedDisplayText.IndexOf("]]]") + 3;
+                int index0 = modifiedDisplayText.IndexOf(placeholderText);
+                int index1 = index0 + placeholderText.Length;
                 string textToReplace = modifiedDisplayText.Substring(index0, index1 - index0);
                 string replacementText = "";
-                if (!SyncManager.purchaseReservedSlotsEnabled)
+                if (!SyncManager.enablePurchasingItemSlots)
                     replacementText += "Every reserved item slot is unlocked!\n\n";
                 else
                 {
@@ -122,7 +118,8 @@ namespace ReservedItemSlotCore.Patches
                         longestNameSize = Mathf.Max(longestNameSize, reservedItemSlot.slotName.Length);
                     foreach (var reservedItemSlot in SyncManager.unlockableReservedItemSlotsDict.Values)
                     {
-                        string priceText = (SessionManager.unlockedReservedItemSlots.Contains(reservedItemSlot) || SessionManager.pendingUnlockedReservedItemSlots.Contains(reservedItemSlot)) ? "[Purchased]" : "$" + reservedItemSlot.purchasePrice;
+                        //string priceText = (SessionManager.unlockedReservedItemSlots.Contains(reservedItemSlot) || SessionManager.pendingUnlockedReservedItemSlots.Contains(reservedItemSlot)) ? "[Purchased]" : "$" + reservedItemSlot.purchasePrice;
+                        string priceText = SessionManager.IsItemSlotUnlocked(reservedItemSlot) ? "[Purchased]" : "$" + reservedItemSlot.purchasePrice;
                         replacementText += string.Format("* {0}{1}   //   {2}\n", reservedItemSlot.slotDisplayName, new string(' ', longestNameSize - reservedItemSlot.slotDisplayName.Length), priceText);
                     }
                 }
@@ -160,7 +157,7 @@ namespace ReservedItemSlotCore.Patches
             {
                 if ("confirm".StartsWith(input))
                 {
-                    if (SessionManager.unlockedReservedItemSlots.Contains(purchasingItemSlot) || SessionManager.pendingUnlockedReservedItemSlots.Contains(purchasingItemSlot))
+                    if (purchasingItemSlot.isUnlocked)
                     {
                         Debug.LogWarning("Attempted to confirm purchase on reserved item slot that was already unlocked. Item slot: " + purchasingItemSlot.slotDisplayName);
                         __result = BuildTerminalNodeAlreadyUnlocked(purchasingItemSlot);
@@ -205,7 +202,7 @@ namespace ReservedItemSlotCore.Patches
 
             if (reservedItemSlot != null)
             {
-                if (SessionManager.unlockedReservedItemSlots.Contains(reservedItemSlot) || SessionManager.pendingUnlockedReservedItemSlots.Contains(reservedItemSlot))
+                if (SessionManager.IsItemSlotUnlocked(reservedItemSlot))
                 {
                     Plugin.LogWarning("Attempted to start purchase on reserved item slot that was already unlocked. Item slot: " + reservedItemSlot.slotName);
                     __result = BuildTerminalNodeAlreadyUnlocked(reservedItemSlot);
@@ -281,8 +278,7 @@ namespace ReservedItemSlotCore.Patches
 
             terminalNode.displayText += "New credit balance: $" + newGroupCredits + "\n\n";
 
-            if (SessionManager.preGame)
-                terminalNode.displayText += "This slot will become available once the game has started.\n\n";
+            //if (SessionManager.preGame) terminalNode.displayText += "This slot will become available once the game has started.\n\n";
 
             return terminalNode;
         }

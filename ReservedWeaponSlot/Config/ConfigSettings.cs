@@ -43,7 +43,7 @@ namespace ReservedWeaponSlot.Config
             overrideRangedSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideRangedWeaponSlotPriority", 59, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
             overrideRangedSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideRangedWeaponSlotPrice", 250, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
 
-            combineMeleeAndRangedWeaponSlots = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "CombineMeleeAndRangedWeaponSlots", true, "[Host only] If true, melee weapons will have their own reserved slot."));
+            combineMeleeAndRangedWeaponSlots = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "CombineMeleeAndRangedWeaponSlots", true, "[Host only]     "));
             overrideCombinedWeaponSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideCombinedWeaponSlotPrice", 400, "[Host only] Only applies if CombineMeleeAndRangedWeaponSlots is true. Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
 
             disableReservedAmmoSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "DisableReservedAmmoSlot", false, "[Host only] Disables the reserved ammo slot. Will sync with clients."));

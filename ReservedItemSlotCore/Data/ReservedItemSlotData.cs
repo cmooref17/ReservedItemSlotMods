@@ -1,10 +1,13 @@
-﻿using HarmonyLib;
+﻿using GameNetcodeStuff;
+using HarmonyLib;
 using ReservedItemSlotCore.Networking;
+using ReservedItemSlotCore.Patches;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine.UI;
 
 namespace ReservedItemSlotCore.Data
 {
@@ -23,7 +26,58 @@ namespace ReservedItemSlotCore.Data
         public int slotPriority = 0;
         public int purchasePrice = 200;
 
-        public bool slotUnlocked { get { return (SessionManager.unlockedReservedItemSlots != null && SessionManager.unlockedReservedItemSlotsDict.ContainsKey(slotName)) || (SessionManager.pendingUnlockedReservedItemSlots != null && SessionManager.pendingUnlockedReservedItemSlotsDict.ContainsKey(slotName)); } }
+        public bool isUnlocked { get { return SessionManager.IsItemSlotUnlocked(this); } }
+
+
+        /// <summary>
+        /// Returns the index of this reserved item slot in the specified player's inventory.
+        /// </summary>
+        /// <param name="playerController"></param>
+        /// <returns></returns>
+        public int GetIndexInInventory(PlayerControllerB playerController)
+        {
+            if (playerController == null || !isUnlocked || !ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData))
+                return -1;
+
+            return GetReservedItemSlotIndex() + playerData.reservedHotbarStartIndex;
+        }
+        internal int GetIndexInInventory(ReservedPlayerData playerData) => GetIndexInInventory(playerData?.playerController);
+
+
+        /// <summary>
+        /// Returns the currently held grabbable object in the reserved item slot by the specified player.
+        /// </summary>
+        /// <param name="playerController"></param>
+        /// <returns></returns>
+        public GrabbableObject GetHeldObjectInSlot(PlayerControllerB playerController)
+        {
+            if (playerController == null || !isUnlocked || !ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData))
+                return null;
+
+            int indexInInventory = GetIndexInInventory(playerController);
+            if (indexInInventory >= playerData.reservedHotbarStartIndex && indexInInventory < playerData.reservedHotbarEndIndexExcluded)
+                return playerController.ItemSlots[indexInInventory];
+
+            return null;
+        }
+        internal GrabbableObject GetHeldObjectInSlot(ReservedPlayerData playerData) => GetHeldObjectInSlot(playerData?.playerController);
+
+
+        /// <summary>
+        /// Returns the item slot frame Image component (HUD element) for this reserved item slot.
+        /// </summary>
+        /// <returns></returns>
+        public Image GetItemSlotFrameHUD()
+        {
+            if (StartOfRound.Instance?.localPlayerController == null || !isUnlocked)
+                return null;
+
+            int reservedItemSlotIndex = GetReservedItemSlotIndex();
+            if (reservedItemSlotIndex < 0 || HUDPatcher.reservedItemSlots == null || reservedItemSlotIndex >= HUDPatcher.reservedItemSlots.Count)
+                return null;
+
+            return HUDPatcher.reservedItemSlots[reservedItemSlotIndex];
+        }
 
 
         /// <summary>
@@ -111,7 +165,7 @@ namespace ReservedItemSlotCore.Data
                 {
                     while (allReservedItemSlotDataByPriority.ContainsKey(newSlotData.slotPriority))
                         newSlotData.slotPriority--;
-                    Plugin.LogWarning("Attempted to create a new ReservedItemSlotData (" + slotName + ") with the same priority as: " + existingSlotDataName.slotName + ". Adjusting priority to: " + newSlotData.slotPriority);
+                    Plugin.LogWarning("Attempted to create a new ReservedItemSlotData (" + slotName + ") with the same priority as: " + existingSlotDataPriority.slotName + ". Adjusting priority to: " + newSlotData.slotPriority);
                 }
 
                 allReservedItemSlotData.Add(newSlotData.slotName, newSlotData);
@@ -129,7 +183,7 @@ namespace ReservedItemSlotCore.Data
             this.slotPriority = slotPriority;
             this.purchasePrice = purchasePrice;
 
-            slotDisplayName = slotName.Replace('_', ' ').Trim(' ');
+            slotDisplayName = slotName.Replace('_', ' ').Replace('-', ' ').Trim(' ');
             slotDisplayName = char.ToUpper(slotDisplayName[0]) + slotDisplayName.Substring(1).ToLower();
         }
 
@@ -183,7 +237,7 @@ namespace ReservedItemSlotCore.Data
         /// <returns></returns>
         public int GetReservedItemSlotIndex()
         {
-            if (SessionManager.unlockedReservedItemSlots != null)
+            if (SessionManager.numReservedItemSlotsUnlocked > 0)
                 return SessionManager.unlockedReservedItemSlots.IndexOf(this);
             return -1;
         }
@@ -194,8 +248,8 @@ namespace ReservedItemSlotCore.Data
         public bool ContainsItem(string itemName) => reservedItemData != null && reservedItemData.ContainsKey(itemName);
 
 
-        public ReservedItemData GetReservedItem(GrabbableObject grabbableObject) => grabbableObject?.itemProperties != null ? GetReservedItem(grabbableObject.itemProperties.itemName) : null;
-        public ReservedItemData GetReservedItem(Item item) => item != null ? GetReservedItem(item.itemName) : null;
-        public ReservedItemData GetReservedItem(string itemName) => reservedItemData.ContainsKey(itemName) ? reservedItemData[itemName] : null;
+        public ReservedItemData GetReservedItemData(GrabbableObject grabbableObject) => grabbableObject?.itemProperties != null ? GetReservedItemData(grabbableObject.itemProperties.itemName) : null;
+        public ReservedItemData GetReservedItemData(Item item) => item != null ? GetReservedItemData(item.itemName) : null;
+        public ReservedItemData GetReservedItemData(string itemName) => reservedItemData.ContainsKey(itemName) ? reservedItemData[itemName] : null;
     }
 }

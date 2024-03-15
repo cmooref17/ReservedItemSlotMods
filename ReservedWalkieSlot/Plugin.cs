@@ -48,12 +48,7 @@ namespace ReservedWalkieSlot
 
         void CreateReservedItemSlots()
         {
-            walkieSlotData = ReservedItemSlotData.CreateReservedItemSlotData("walkie_talkie", 100, 150);
-
-            // Set override values from config
-            walkieSlotData.slotPriority = ConfigSettings.overrideItemSlotPriority.Value;
-            walkieSlotData.purchasePrice = ConfigSettings.overridePurchasePrice.Value;
-
+            walkieSlotData = ReservedItemSlotData.CreateReservedItemSlotData("walkie_talkie", ConfigSettings.overrideItemSlotPriority.Value, ConfigSettings.overridePurchasePrice.Value);
             walkieData = walkieSlotData.AddItemToReservedItemSlot(new ReservedItemData("Walkie-talkie", PlayerBone.Spine3, new Vector3(0.15f, -0.05f, 0.25f), new Vector3(0, -90, 100)));
         }
 

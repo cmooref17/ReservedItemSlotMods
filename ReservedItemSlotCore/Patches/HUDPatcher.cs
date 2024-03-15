@@ -35,8 +35,6 @@ namespace ReservedItemSlotCore.Patches
         static bool lerpToggledItemSlotFrames = false;
         static float largestPositionDifference = 0;
 
-        public static TextMeshProUGUI preGameReminderText;
-
 
         [HarmonyPatch(typeof(HUDManager), "Awake")]
         [HarmonyPostfix]
@@ -48,22 +46,6 @@ namespace ReservedItemSlotCore.Patches
             itemSlotSpacing = ((9f / 8f) * itemSlotWidth);
             xPos = (canvasScaler.referenceResolution.x / 2) / aspectRatioFitter.aspectRatio - itemSlotWidth / 4;
             reservedItemSlots.Clear();
-
-            if (preGameReminderText == null)
-                preGameReminderText = new GameObject("PregameTooltip", new Type[] { typeof(RectTransform), typeof(TextMeshProUGUI) }).GetComponent<TextMeshProUGUI>();
-
-            RectTransform tooltipTransform = preGameReminderText.rectTransform;
-            tooltipTransform.transform.parent = __instance.itemSlotIconFrames[0].rectTransform.parent;
-            tooltipTransform.localScale = Vector3.one;
-            tooltipTransform.sizeDelta = new Vector2(HUDManager.Instance.itemSlotIconFrames[0].rectTransform.sizeDelta.x * 2, 10);
-            tooltipTransform.pivot = Vector2.one / 2;
-            tooltipTransform.anchoredPosition3D = new Vector3(xPos - 16, -(tooltipTransform.sizeDelta.x / 4), 0);
-            preGameReminderText.font = HUDManager.Instance.controlTipLines[0].font;
-            preGameReminderText.fontSize = 5.5f;
-            preGameReminderText.alignment = TextAlignmentOptions.Justified;
-            preGameReminderText.fontStyle = FontStyles.Bold;
-            //preGameReminderText.textInfo.lineInfo[preGameReminderText.textInfo.lineCount - 1].alignment = HorizontalAlignmentOptions.Right;
-            preGameReminderText.text = "Reserved Slots will become available upon starting the round.";
         }
 
 
@@ -85,9 +67,9 @@ namespace ReservedItemSlotCore.Patches
                 if (largestPositionDifference < 2 && largestPositionDifference != -1)
                     lerpToggledItemSlotFrames = false;
 
-                for (int i = 0; i < SessionManager.unlockedReservedItemSlots.Count; i++)
+                for (int i = 0; i < SessionManager.numReservedItemSlotsUnlocked; i++)
                 {
-                    var reservedItemSlot = SessionManager.unlockedReservedItemSlots[i];
+                    var reservedItemSlot = SessionManager.GetUnlockedReservedItemSlot(i);
                     var itemSlotFrame = HUDManager.Instance.itemSlotIconFrames[ReservedPlayerData.localPlayerData.reservedHotbarStartIndex + i];
                     bool anchorRight = reservedItemSlot.slotPriority >= 0 || !ConfigSettings.displayNegativePrioritySlotsLeftSideOfScreen.Value;
                     Vector2 itemSlotFramePosition = itemSlotFrame.rectTransform.anchoredPosition;
@@ -109,13 +91,13 @@ namespace ReservedItemSlotCore.Patches
 
         public static void OnUpdateReservedItemSlots()
         {
-            if (reservedItemSlots == null || SessionManager.unlockedReservedItemSlots == null || reservedItemSlots.Count == SessionManager.unlockedReservedItemSlots.Count)
+            if (reservedItemSlots == null || SessionManager.numReservedItemSlotsUnlocked <= 0 || reservedItemSlots.Count == SessionManager.numReservedItemSlotsUnlocked)
                 return;
 
             var newItemSlotFrames = new List<Image>(HUDManager.Instance.itemSlotIconFrames);
             var newItemSlotIcons = new List<Image>(HUDManager.Instance.itemSlotIcons);
 
-            for (int i = reservedItemSlots.Count; i < SessionManager.unlockedReservedItemSlots.Count; i++)
+            for (int i = reservedItemSlots.Count; i < SessionManager.numReservedItemSlotsUnlocked; i++)
             {
                 Image itemSlotFrame = GameObject.Instantiate(newItemSlotFrames[0], newItemSlotFrames[0].transform.parent);
                 Image itemSlotIcon = itemSlotFrame.transform.GetChild(0).GetComponent<Image>();
@@ -142,7 +124,7 @@ namespace ReservedItemSlotCore.Patches
 
         public static void UpdateUI()
         {
-            if (reservedItemSlots.Count != SessionManager.unlockedReservedItemSlots.Count)
+            if (reservedItemSlots.Count != SessionManager.numReservedItemSlotsUnlocked)
             {
                 Plugin.LogError("Called UpdateUI with mismatched unlocked reserved item slots and reserved item slot hud elements.");
                 return;
@@ -151,9 +133,9 @@ namespace ReservedItemSlotCore.Patches
             int positiveIndex = 0;
             int negativeIndex = 0;
 
-            for (int i = 0; i < SessionManager.unlockedReservedItemSlots.Count; i++)
+            for (int i = 0; i < SessionManager.numReservedItemSlotsUnlocked; i++)
             {
-                var reservedItemSlot = SessionManager.unlockedReservedItemSlots[i];
+                var reservedItemSlot = SessionManager.GetUnlockedReservedItemSlot(i);
                 var itemSlotFrame = HUDManager.Instance.itemSlotIconFrames[ReservedPlayerData.localPlayerData.reservedHotbarStartIndex + i];
                 var itemSlotIcon = HUDManager.Instance.itemSlotIcons[ReservedPlayerData.localPlayerData.reservedHotbarStartIndex + i];
 

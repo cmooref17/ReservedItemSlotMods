@@ -50,7 +50,7 @@ namespace ReservedItemSlotCore.Data
         public int GetNumHeldReservedItems()
         {
             int num = 0;
-            for (int i = 0; i < playerController.ItemSlots.Length; i++)
+            for (int i = reservedHotbarStartIndex; i < reservedHotbarEndIndexExcluded; i++)
             {
                 var item = playerController.ItemSlots[i];
                 num += (item != null && SyncManager.IsReservedItem(item.itemProperties.itemName) ? 1 : 0);
@@ -63,14 +63,13 @@ namespace ReservedItemSlotCore.Data
         {
             if (itemSlotData == null)
                 return null;
-            if (!SessionManager.unlockedReservedItemSlotsDict.TryGetValue(itemSlotData.slotName, out itemSlotData))
+            if (!SessionManager.TryGetUnlockedItemSlotData(itemSlotData.slotName, out itemSlotData))
                 return null;
 
-            int index = SessionManager.unlockedReservedItemSlots.IndexOf(itemSlotData);
-            if (index == -1)
+            int indexInInventory = itemSlotData.GetIndexInInventory(this);
+            if (indexInInventory < reservedHotbarStartIndex || indexInInventory >= reservedHotbarEndIndexExcluded)
                 return null;
-            index += reservedHotbarStartIndex;
-            return index >= 0 && index < playerController.ItemSlots.Length ? playerController.ItemSlots[index] : null;
+            return itemSlots[indexInInventory];
         }
 
 
@@ -79,9 +78,9 @@ namespace ReservedItemSlotCore.Data
             if (!SessionManager.allReservedItemData.TryGetValue(itemName, out var itemData) || !itemData.HasUnlockedParentSlot())
                 return false;
 
-            for (int i = 0; i < SessionManager.unlockedReservedItemSlots.Count; i++)
+            for (int i = 0; i < SessionManager.numReservedItemSlotsUnlocked; i++)
             {
-                var reservedItemSlot = SessionManager.unlockedReservedItemSlots[i];
+                var reservedItemSlot = SessionManager.GetUnlockedReservedItemSlot(i);
                 if (!reservedItemSlot.ContainsItem(itemName))
                     continue;
                 int indexInInventory = i + reservedHotbarStartIndex;
@@ -94,15 +93,16 @@ namespace ReservedItemSlotCore.Data
         }
 
 
-        public ReservedItemSlotData GetFirstEmptySlotForItem(string itemName)
+        public ReservedItemSlotData GetFirstEmptySlotForReservedItem(string itemName)
         {
-            for (int i = 0; i < SessionManager.unlockedReservedItemSlots.Count; i++)
+            for (int i = 0; i < SessionManager.numReservedItemSlotsUnlocked; i++)
             {
-                var reservedItemSlot = SessionManager.unlockedReservedItemSlots[i];
+                var reservedItemSlot = SessionManager.GetUnlockedReservedItemSlot(i);
                 if (!reservedItemSlot.ContainsItem(itemName))
                     continue;
+
                 int indexInInventory = i + reservedHotbarStartIndex;
-                if (indexInInventory >= playerController.ItemSlots.Length)
+                if (indexInInventory < 0 || indexInInventory >= playerController.ItemSlots.Length)
                     return null;
                 if (playerController.ItemSlots[indexInInventory] == null)
                     return reservedItemSlot;
@@ -115,13 +115,13 @@ namespace ReservedItemSlotCore.Data
         {
             if (grabbableObject == null) return null;
 
-            for (int i = 0; i < itemSlots.Length; i++)
+            for (int i = reservedHotbarStartIndex; i < reservedHotbarEndIndexExcluded; i++)
             {
                 var item = itemSlots[i];
-                if (grabbableObject == item && i >= reservedHotbarStartIndex && i < reservedHotbarEndIndexExcluded)
+                if (grabbableObject == item)
                 {
                     int reservedIndex = i - reservedHotbarStartIndex;
-                    return SessionManager.unlockedReservedItemSlots[reservedIndex];
+                    return SessionManager.GetUnlockedReservedItemSlot(reservedIndex);
                 }
             }
             return null;
@@ -133,13 +133,25 @@ namespace ReservedItemSlotCore.Data
             if (currentItemSlotIsReserved)
             {
                 int reservedIndex = currentItemSlot - reservedHotbarStartIndex;
-                if (reservedIndex >= 0 && reservedIndex < SessionManager.unlockedReservedItemSlots.Count)
-                    return SessionManager.unlockedReservedItemSlots[reservedIndex];
+                if (reservedIndex >= 0 && reservedIndex < SessionManager.numReservedItemSlotsUnlocked)
+                    return SessionManager.GetUnlockedReservedItemSlot(reservedIndex);
             }
             return null;
         }
 
 
-        public bool IsItemInReservedItemSlot(GrabbableObject grabbableObject) => GetParentReservedItemSlot(grabbableObject) != null;
+        public bool IsItemInReservedItemSlot(GrabbableObject grabbableObject)
+        {
+            if (grabbableObject == null)
+                return false;
+
+            for (int i = reservedHotbarStartIndex; i < reservedHotbarEndIndexExcluded; i++)
+            {
+                if (grabbableObject == itemSlots[i])
+                    return true;
+            }
+            return false;
+        }
+        //GetParentReservedItemSlot(grabbableObject) != null;
     }
 }
