@@ -7,9 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+/*
 namespace ReservedWalkieSlot.Patches
 {
-    /*
     [HarmonyPatch(typeof(Terminal))]
     public class TerminalPatcher
     {
@@ -40,5 +40,5 @@ namespace ReservedWalkieSlot.Patches
             localPlayerController.activatingItem = activatingWalkie;
         }
     }
-    */
 }
+*/

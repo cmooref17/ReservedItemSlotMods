@@ -119,7 +119,7 @@ namespace ReservedItemSlotCore.Patches
             playerData.reservedHotbarStartIndex = startIndex;
 
             if (playerData.reservedHotbarStartIndex < 0)
-                Plugin.LogError("Set new reserved start index to slot: " + playerData.reservedHotbarStartIndex + " . Maybe share these logs with Flip? :)");
+                Plugin.LogError("Set new reserved start index to slot: " + playerData.reservedHotbarStartIndex + ". Maybe share these logs with Flip? :)");
             if (playerData.reservedHotbarEndIndexExcluded - 1 >= playerData.playerController.ItemSlots.Length)
                 Plugin.LogError("Set new reserved start index to slot: " + playerData.reservedHotbarStartIndex + " Last reserved slot index: " + (playerData.reservedHotbarEndIndexExcluded - 1) + " Inventory size: " + playerData.playerController.ItemSlots.Length + ". Maybe share these logs with Flip? :)");
 
@@ -190,21 +190,17 @@ namespace ReservedItemSlotCore.Patches
             if (!ReservedPlayerData.allPlayerData.TryGetValue(__instance, out var playerData))
                 return;
 
-            Plugin.LogWarning("AAA PlayerData: " + playerData.playerController.playerUsername);
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 if (grabValidated && grabbedObject.TryGet(out NetworkObject networkObject))
                 {
                     GrabbableObject grabbingObject = networkObject.GetComponent<GrabbableObject>();
-                    Plugin.LogWarning("CCC Null? " + (grabbingObject == null));
                     if (SessionManager.TryGetUnlockedItemData(grabbingObject, out var grabbingItemData))
                     {
-                        Plugin.LogWarning("DDD ItemData: " + grabbingItemData.itemName);
                         var grabbingReservedItemSlotData = playerData.GetFirstEmptySlotForReservedItem(grabbingItemData.itemName);
                         if (grabbingReservedItemSlotData != null)
                         {
                             playerData.grabbingReservedItemSlotData = grabbingReservedItemSlotData;
-                            Plugin.LogWarning("EEE ReservedSlotIndex: " + grabbingReservedItemSlotData.GetReservedItemSlotIndex());
                             playerData.grabbingReservedItemSlotData = grabbingReservedItemSlotData;
                             playerData.grabbingReservedItemData = grabbingItemData;
                             playerData.grabbingReservedItem = grabbingObject;
@@ -245,7 +241,7 @@ namespace ReservedItemSlotCore.Patches
                         if (playerData.previouslyHeldItem != null)
                             playerData.previouslyHeldItem.EnableItemMeshes(true);
 
-                        ForceDisableItemMesh(playerData.grabbingReservedItem);
+                        ReservedItemsPatcher.ForceEnableItemMesh(playerData.grabbingReservedItem, false); // Force disable
 
                         Traverse.Create(grabbingObject).Field("previousPlayerHeldBy").SetValue(__instance);
                         if (__instance != localPlayerController)
@@ -258,7 +254,7 @@ namespace ReservedItemSlotCore.Patches
                             playerData.grabbingReservedItem = null;
                             playerData.previousHotbarIndex = -1;
 
-                            if (grabbingItemData.holsteredParentBone != PlayerBone.None)
+                            if (grabbingItemData.showOnPlayerWhileHolstered)
                                 grabbingObject.EnableItemMeshes(true);
                         }
                         else
@@ -438,16 +434,6 @@ namespace ReservedItemSlotCore.Patches
 
         static GrabbableObject GetCurrentlyGrabbingObject(PlayerControllerB playerController) => (GrabbableObject)Traverse.Create(playerController).Field("currentlyGrabbingObject").GetValue();
         static void SetCurrentlyGrabbingObject(PlayerControllerB playerController, GrabbableObject grabbable) => Traverse.Create(playerController).Field("currentlyGrabbingObject").SetValue(grabbable);
-
-
-        public static void ForceDisableItemMesh(GrabbableObject grabbableObject)
-        {
-            foreach (var renderer in grabbableObject.GetComponentsInChildren<MeshRenderer>())
-            {
-                if (!renderer.name.Contains("ScanNode") && !renderer.gameObject.CompareTag("DoNotSet") && !renderer.gameObject.CompareTag("InteractTrigger"))
-                    renderer.enabled = false;
-            }
-        }
 
 
         public static bool ReservedItemIsBeingGrabbed(GrabbableObject grabbableObject)

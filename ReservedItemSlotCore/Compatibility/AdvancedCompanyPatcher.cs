@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ReservedItemSlotCore.Compatibility
 {
-    public class AdvancedCompanyPatcher
+    public class AdvancedCompany_Patcher
     {
         public static bool Enabled { get { return Plugin.IsModLoaded("com.potatoepet.AdvancedCompany"); } }
     }

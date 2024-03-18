@@ -26,23 +26,17 @@ namespace ReservedItemSlotCore.Patches
             if (__instance.playerHeldBy == null)
                 return;
 
-            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData))
+            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData) && SessionManager.TryGetUnlockedItemData(__instance, out var itemData))
             {
-                if (SessionManager.TryGetUnlockedItemData(__instance, out var itemData))
+                if (playerData.IsItemInReservedItemSlot(__instance) && itemData.showOnPlayerWhileHolstered)
                 {
-                    if (playerData.IsItemInReservedItemSlot(__instance))
+                    foreach (var renderer in __instance.GetComponentsInChildren<MeshRenderer>())
                     {
-                        if (itemData.showOnPlayerWhileHolstered)
-                        {
-                            foreach (var renderer in __instance.GetComponentsInChildren<MeshRenderer>())
-                            {
-                                if (!renderer.name.Contains("ScanNode") && !renderer.gameObject.CompareTag("DoNotSet") && !renderer.gameObject.CompareTag("InteractTrigger"))
-                                    renderer.gameObject.layer = playerData.isLocalPlayer ? 23 : 6;
-                            }
-                            __instance.parentObject = playerData.boneMap.GetBone(itemData.holsteredParentBone);
-                            ForceEnableItemMesh(__instance, true);
-                        }
+                        if (!renderer.name.Contains("ScanNode") && !renderer.gameObject.CompareTag("DoNotSet") && !renderer.gameObject.CompareTag("InteractTrigger"))
+                            renderer.gameObject.layer = playerData.isLocalPlayer ? 23 : 6;
                     }
+                    __instance.parentObject = playerData.boneMap.GetBone(itemData.holsteredParentBone);
+                    ForceEnableItemMesh(__instance, true);
                 }
             }
         }
@@ -105,14 +99,11 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPrefix]
         public static void OnEnableItemMeshes(ref bool enable, GrabbableObject __instance)
         {
-            if (__instance.playerHeldBy == null || ignoreMeshOverride || !ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData))
+            if (__instance.playerHeldBy != null && !ignoreMeshOverride && ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData))
             {
-                ignoreMeshOverride = false;
-                return;
+                if (SessionManager.TryGetUnlockedItemData(__instance, out var reservedItemData) && playerData.IsItemInReservedItemSlot(__instance) && reservedItemData.showOnPlayerWhileHolstered && playerData.currentSelectedItem != __instance && !PlayerPatcher.ReservedItemIsBeingGrabbed(__instance))
+                    enable = true;
             }
-
-            if (SessionManager.TryGetUnlockedItemData(__instance, out var reservedItemData) && playerData.IsItemInReservedItemSlot(__instance) && reservedItemData.showOnPlayerWhileHolstered && playerData.currentSelectedItem != __instance && !PlayerPatcher.ReservedItemIsBeingGrabbed(__instance))
-                enable = true;
             ignoreMeshOverride = false;
         }
 

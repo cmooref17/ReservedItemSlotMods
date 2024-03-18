@@ -110,17 +110,15 @@ namespace ReservedItemSlotCore.Patches
 
                 if (grabbableObjectData != null)
                 {
+                    grabbableObjectData.playerHeldBy = null;
                     var flashlightItem = grabbableObjectData as FlashlightItem;
                     if (flashlightItem != null)
                     {
-                        if (flashlightItem.insertedBattery != null)
-                            flashlightItem.insertedBattery.charge = 100;
-                        flashlightItem.SwitchFlashlight(true);
+                        flashlightItem.flashlightBulb.enabled = true;
+                        flashlightItem.flashlightBulbGlow.enabled = true;
+                        flashlightItem.flashlightMesh.sharedMaterials[1] = flashlightItem.bulbLight;
                     }
-                    grabbableObjectData.playerHeldBy = null;
-                    grabbableObjectData.EnableItemMeshes(true);
-                    if (grabbableObjectData.mainObjectRenderer != null)
-                        grabbableObjectData.mainObjectRenderer.enabled = true;
+                    ReservedItemsPatcher.ForceEnableItemMesh(grabbableObjectData, true);
                     grabbableObjectData.EnablePhysics(false);
                 }
                 GameObject.DestroyImmediate(newObject.GetComponentInChildren<NetworkObject>());

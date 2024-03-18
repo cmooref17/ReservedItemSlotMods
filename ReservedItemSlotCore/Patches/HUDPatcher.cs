@@ -62,6 +62,12 @@ namespace ReservedItemSlotCore.Patches
                 UpdateHotkeyTooltipText();
             }
 
+            //LerpItemSlotFrames();
+        }
+
+
+        private static void LerpItemSlotFrames()
+        {
             if (lerpToggledItemSlotFrames)
             {
                 if (largestPositionDifference < 2 && largestPositionDifference != -1)
@@ -139,6 +145,7 @@ namespace ReservedItemSlotCore.Patches
                 var itemSlotFrame = HUDManager.Instance.itemSlotIconFrames[ReservedPlayerData.localPlayerData.reservedHotbarStartIndex + i];
                 var itemSlotIcon = HUDManager.Instance.itemSlotIcons[ReservedPlayerData.localPlayerData.reservedHotbarStartIndex + i];
 
+
                 itemSlotFrame.name = "Slot" + i + " [ReservedItemSlot] (" + reservedItemSlot.slotName + ")";
 
                 Vector2 hudPosition = default;
@@ -155,6 +162,7 @@ namespace ReservedItemSlotCore.Patches
                     negativeIndex++;
                 }
 
+                //itemSlotFrame.rectTransform.localPosition = Vector3.zero;
                 itemSlotFrame.rectTransform.anchoredPosition = hudPosition;
 
                 var reservedGrabbableObject = ReservedPlayerData.localPlayerData.GetReservedItem(reservedItemSlot);

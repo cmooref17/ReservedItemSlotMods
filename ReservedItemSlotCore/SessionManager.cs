@@ -10,6 +10,8 @@ using UnityEngine.UI;
 using ReservedItemSlotCore.Data;
 using ReservedItemSlotCore.Networking;
 using Unity.Netcode;
+using UnityEngine.Diagnostics;
+using GameNetcodeStuff;
 
 namespace ReservedItemSlotCore
 {
@@ -18,10 +20,10 @@ namespace ReservedItemSlotCore
     {
         internal static List<ReservedItemSlotData> unlockedReservedItemSlots = new List<ReservedItemSlotData>();
         internal static Dictionary<string, ReservedItemSlotData> unlockedReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
-        static List<ReservedItemSlotData> pendingUnlockedReservedItemSlots = new List<ReservedItemSlotData>();
-        static Dictionary<string, ReservedItemSlotData> pendingUnlockedReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
+        private static List<ReservedItemSlotData> pendingUnlockedReservedItemSlots = new List<ReservedItemSlotData>();
+        private static Dictionary<string, ReservedItemSlotData> pendingUnlockedReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
 
-        public static Dictionary<string, ReservedItemData> allReservedItemData = new Dictionary<string, ReservedItemData>();
+        private static Dictionary<string, ReservedItemData> allReservedItemData = new Dictionary<string, ReservedItemData>();
 
         public static int numReservedItemSlotsUnlocked { get { return unlockedReservedItemSlots != null ? unlockedReservedItemSlots.Count : 0; } }
 
@@ -35,7 +37,6 @@ namespace ReservedItemSlotCore
             pendingUnlockedReservedItemSlots.Clear();
             pendingUnlockedReservedItemSlotsDict.Clear();
             allReservedItemData.Clear();
-            //preGame = true;
         }
 
 
@@ -257,9 +258,9 @@ namespace ReservedItemSlotCore
         }
 
 
-        public static bool IsReservedItem(GrabbableObject grabbableObject) => grabbableObject?.itemProperties != null ? IsReservedItem(grabbableObject.itemProperties.itemName) : false;
+        public static bool IsReservedItem(GrabbableObject grabbableObject) { string originalItemName = ItemNameMap.GetItemName(grabbableObject); return IsReservedItem(originalItemName) || (grabbableObject?.itemProperties != null && IsReservedItem(grabbableObject.itemProperties.itemName)); } // return grabbableObject?.itemProperties != null ? IsReservedItem(grabbableObject.itemProperties.itemName) : false; }
         public static bool IsReservedItem(Item item) => item != null ? IsReservedItem(item.itemName) : false;
-        public static bool IsReservedItem(string itemName) => allReservedItemData.ContainsKey(itemName);
+        private static bool IsReservedItem(string itemName) { return allReservedItemData.ContainsKey(itemName); }
 
 
         public static bool TryGetUnlockedItemSlotData(string itemSlotName, out ReservedItemSlotData itemSlotData) { itemSlotData = null; unlockedReservedItemSlotsDict.TryGetValue(itemSlotName, out itemSlotData); return itemSlotData != null; }
@@ -268,10 +269,11 @@ namespace ReservedItemSlotCore
         //public static bool TryGetUnlockedReservedItemData(GrabbableObject item, out ReservedItemData itemData) { itemData = null; return item?.itemProperties != null && TryGetUnlockedReservedItemData(item.itemProperties.itemName, out itemData); }
 
 
+        public static bool TryGetUnlockedItemData(GrabbableObject item, out ReservedItemData itemData) { itemData = null; string originalItemName = ItemNameMap.GetItemName(item); return TryGetUnlockedItemData(originalItemName, out itemData) || (item?.itemProperties != null && TryGetUnlockedItemData(item.itemProperties.itemName, out itemData)); }
         public static bool TryGetUnlockedItemData(string itemName, out ReservedItemData itemData) { itemData = null; return allReservedItemData.TryGetValue(itemName, out itemData); }
-        public static bool TryGetUnlockedItemData(GrabbableObject item, out ReservedItemData itemData) { itemData = null; return item?.itemProperties != null && TryGetUnlockedItemData(item.itemProperties.itemName, out itemData); }
 
 
+        /*
         public static bool HasReservedItemSlotForItem(GrabbableObject grabbableObject) => grabbableObject?.itemProperties != null ? HasReservedItemSlotForItem(grabbableObject.itemProperties.itemName) : false;
         public static bool HasReservedItemSlotForItem(Item item) => item != null ? HasReservedItemSlotForItem(item.itemName) : false;
         public static bool HasReservedItemSlotForItem(string itemName)
@@ -286,5 +288,6 @@ namespace ReservedItemSlotCore
             }
             return false;
         }
+        */
     }
 }

@@ -15,7 +15,7 @@ using ReservedSprayPaintSlot.Config;
 
 namespace ReservedSprayPaintSlot
 {
-    [BepInPlugin("FlipMods.ReservedSprayPaintSlot", "ReservedSprayPaintSlot", "1.1.0")]
+    [BepInPlugin("FlipMods.ReservedSprayPaintSlot", "ReservedSprayPaintSlot", "1.1.1")]
     [BepInDependency("FlipMods.ReservedItemSlotCore", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
@@ -47,12 +47,7 @@ namespace ReservedSprayPaintSlot
 
         void CreateReservedItemSlots()
         {
-            sprayPaintSlotData= ReservedItemSlotData.CreateReservedItemSlotData("spray_paint", 30, 100);
-
-            // Set override values from config
-            sprayPaintSlotData.slotPriority = ConfigSettings.overrideItemSlotPriority.Value;
-            sprayPaintSlotData.purchasePrice = ConfigSettings.overridePurchasePrice.Value;
-
+            sprayPaintSlotData= ReservedItemSlotData.CreateReservedItemSlotData("spray_paint", ConfigSettings.overrideItemSlotPriority.Value, ConfigSettings.overridePurchasePrice.Value);
             sprayPaintData = sprayPaintSlotData.AddItemToReservedItemSlot(new ReservedItemData("Spray paint", PlayerBone.Hips, new Vector3(0.26f, -0.05f, 0.2f), new Vector3(-105, 0, 0)));
         }
 

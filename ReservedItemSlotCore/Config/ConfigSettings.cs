@@ -3,6 +3,7 @@ using ReservedItemSlotCore.Networking;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEngine;
 
 
 namespace ReservedItemSlotCore.Config
@@ -35,7 +36,9 @@ namespace ReservedItemSlotCore.Config
             toggleFocusReservedHotbar = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ToggleFocusReservedHotbar", false, "If set to true, swapping to the reserved hotbar slots will be toggled when pressing the hotkey rather than while holding the hotkey. Setting this option to true may have bugs at this current time."));
             preventReservedItemSlotFade = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "PreventReservedHotbarSlotFade", false, "If true, the reserved hotbar slots will not fade with the rest of the default slots."));
 
-            numCustomItemSlots = AddConfigEntry(Plugin.instance.Config.Bind("Custom Reserved Item Slots", "NumCustomItemSlots", 1, "[Host only] Set the number of custom reserved item slots you want to add. Custom slots will update in the config when you start the game."));
+            numCustomItemSlots = AddConfigEntry(Plugin.instance.Config.Bind("Custom Reserved Item Slots", "NumCustomItemSlots", 1, "[Host only] Set the number of custom reserved item slots you want to add. Custom slots will update in the config when you start the game. LIMITED TO 10"));
+            numCustomItemSlots.Value = Mathf.Clamp(numCustomItemSlots.Value, 0, 10);
+
             for (int i = 0; i < numCustomItemSlots.Value; i++)
             {
                 ConfigEntry<string> customItemSlotName = AddConfigEntry(Plugin.instance.Config.Bind("CustomReservedItemSlot " + (i + 1), "ItemSlotName " + (i + 1), "custom_item_slot_" + (i + 1), "[Host only] Make the name of this slot unique. This name is usually only seen in the terminal. This slot will not be created if left blank."));

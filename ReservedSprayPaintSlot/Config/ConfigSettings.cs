@@ -9,7 +9,6 @@ namespace ReservedSprayPaintSlot.Config
 {
     public static class ConfigSettings
     {
-        public static ConfigEntry<bool> hideSprayPaintMeshWaist;
         public static ConfigEntry<float> sprayPaintCapacityMultiplier;
         public static ConfigEntry<int> overrideItemSlotPriority;
         public static ConfigEntry<int> overridePurchasePrice;
@@ -22,11 +21,10 @@ namespace ReservedSprayPaintSlot.Config
         {
             Plugin.Log("BindingConfigs");
 
-            hideSprayPaintMeshWaist = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "HideSprayPaintOnWaist", false, "Hides the spray paint mesh while on your waist."));
             sprayPaintCapacityMultiplier = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "SprayPaintCapacityMultiplier", 10f, "Extends the max capacity of spraypaint cans by this multiplier. This setting will soon be host only, and will sync with all non-host clients."));
-            overrideItemSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideSprayPaintPriority", 30, "Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
-            overridePurchasePrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideSprayPaintSlotPrice", 100, "Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
-            additionalItemsInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalItemsInSlot", "", "Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
+            overrideItemSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "SprayPaintPriorityOverride", 25, "Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
+            overridePurchasePrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "SprayPaintSlotPriceOverride", 50, "Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
+            additionalItemsInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalItemsInSlot", "", "Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems.\nNOTE: IF YOU ARE USING A TRANSLATION MOD, YOU MAY NEED TO ADD THE TRANSLATED NAME OF ANY ITEM YOU WANT IN THIS SLOT."));
 
             additionalItemsInSlot.Value = additionalItemsInSlot.Value.Replace(", ", ",");
             sprayPaintCapacityMultiplier.Value = Mathf.Max(sprayPaintCapacityMultiplier.Value, 0);
@@ -42,15 +40,7 @@ namespace ReservedSprayPaintSlot.Config
         }
 
 
-        public static string[] ParseAdditionalItems()
-        {
-            if (additionalItemsInSlot.Value == "")
-                return new string[0];
-
-            List<string> additionalItemNames = new List<string>(additionalItemsInSlot.Value.Split(','));
-            additionalItemNames = additionalItemNames.Where(s => s.Length >= 1).ToList();
-            return additionalItemNames.ToArray();
-        }
+        public static string[] ParseAdditionalItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(additionalItemsInSlot.Value);
 
 
         public static void TryRemoveOldConfigSettings()

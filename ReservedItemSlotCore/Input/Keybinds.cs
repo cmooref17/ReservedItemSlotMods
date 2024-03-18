@@ -30,7 +30,7 @@ namespace ReservedItemSlotCore.Input
 
         [HarmonyPatch(typeof(PreInitSceneScript), "Awake")]
         [HarmonyPrefix]
-        public static void AddToKeybindMenu()
+        private static void AddToKeybindMenu()
         {
             if (InputUtilsCompat.Enabled)
             {
@@ -52,7 +52,7 @@ namespace ReservedItemSlotCore.Input
 
         [HarmonyPatch(typeof(StartOfRound), "OnEnable")]
 		[HarmonyPrefix]
-		public static void OnEnable()
+        private static void OnEnable()
 		{
             holdingModifierKey = false;
 
@@ -68,7 +68,7 @@ namespace ReservedItemSlotCore.Input
 
 		[HarmonyPatch(typeof(StartOfRound), "OnDisable")]
 		[HarmonyPrefix]
-		public static void OnDisable()
+        private static void OnDisable()
 		{
 			Asset.Disable();
             RawScrollAction.Disable();
@@ -80,7 +80,7 @@ namespace ReservedItemSlotCore.Input
 		}
 
 
-		static void FocusReservedHotbarSlotsAction(InputAction.CallbackContext context)
+        private static void FocusReservedHotbarSlotsAction(InputAction.CallbackContext context)
 		{
             if (localPlayerController == null || !localPlayerController.IsOwner || !localPlayerController.isPlayerControlled || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
 				return;
@@ -99,7 +99,7 @@ namespace ReservedItemSlotCore.Input
 		}
 
 
-		static void UnfocusReservedHotbarSlotsPerformed(InputAction.CallbackContext context)
+        private static void UnfocusReservedHotbarSlotsPerformed(InputAction.CallbackContext context)
 		{
 			if (localPlayerController == null || !localPlayerController.IsOwner || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
 				return;
@@ -112,11 +112,11 @@ namespace ReservedItemSlotCore.Input
 		}
 
 
-		static void OnScrollReservedHotbar(InputAction.CallbackContext context)
+		private static void OnScrollReservedHotbar(InputAction.CallbackContext context)
 		{
 			if (localPlayerController == null || !localPlayerController.IsOwner || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
 				return;
-			if (!context.performed || ReservedPlayerData.localPlayerData.throwingObject || scrollingReservedHotbar  || !ReservedPlayerData.localPlayerData.currentItemSlotIsReserved || ReservedPlayerData.localPlayerData.grabbingReservedItemData != null)
+			if (!context.performed || localPlayerController.inTerminalMenu || ReservedPlayerData.localPlayerData.throwingObject || scrollingReservedHotbar  || !ReservedPlayerData.localPlayerData.currentItemSlotIsReserved || ReservedPlayerData.localPlayerData.grabbingReservedItemData != null)
 				return;
 
 			IEnumerator ResetScrollDelayed()

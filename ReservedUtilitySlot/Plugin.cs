@@ -13,9 +13,10 @@ using ReservedItemSlotCore.Data;
 using ReservedUtilitySlot.Config;
 using UnityEngine.Rendering;
 
+
 namespace ReservedUtilitySlot
 {
-    [BepInPlugin("FlipMods.ReservedUtilitySlot", "ReservedUtilitySlot", "1.0.0")]
+    [BepInPlugin("FlipMods.ReservedUtilitySlot", "ReservedUtilitySlot", "1.0.3")]
     [BepInDependency("FlipMods.ReservedItemSlotCore", BepInDependency.DependencyFlags.HardDependency)]
 	public class Plugin : BaseUnityPlugin
 	{
@@ -24,6 +25,7 @@ namespace ReservedUtilitySlot
         Harmony _harmony;
 
         public static ReservedItemSlotData utilitySlotData;
+
         public static ReservedItemData ladderData;
         public static ReservedItemData lockpickerData;
         public static ReservedItemData jetpackData;
@@ -48,8 +50,14 @@ namespace ReservedUtilitySlot
         public static ReservedItemData mapperData;
         public static ReservedItemData toothpasteData;
 
-
         public static List<ReservedItemData> additionalItemData = new List<ReservedItemData>();
+
+
+        public static ReservedItemSlotData keySlotData;
+        public static ReservedItemData keyData;
+
+        public static List<ReservedItemData> additionalKeyItemData = new List<ReservedItemData>();
+
 
         void Awake()
         {
@@ -68,33 +76,49 @@ namespace ReservedUtilitySlot
 
         void CreateReservedItemSlots()
         {
-            utilitySlotData = ReservedItemSlotData.CreateReservedItemSlotData("utility", 50, 250);
+            if (!ConfigSettings.disableUtilitySlot.Value)
+            {
+                utilitySlotData = ReservedItemSlotData.CreateReservedItemSlotData("utility", ConfigSettings.overrideItemSlotPriority.Value, ConfigSettings.overridePurchasePrice.Value);
 
-            // Set override values from config
-            utilitySlotData.slotPriority = ConfigSettings.overrideItemSlotPriority.Value;
-            utilitySlotData.purchasePrice = ConfigSettings.overridePurchasePrice.Value;
+                ladderData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Extension ladder"));
+                jetpackData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Jetpack"));
+                stunGrenadeData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Stun grenade"));
+                homemadeFlashbangData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Homemade flashbang"));
+                tzpInhalantData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("TZP-Inhalant"));
+                radarBoosterData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Radar-booster"));
+                lockpickerData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Lockpicker"));
 
-            ladderData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Extension ladder"));
-            lockpickerData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Lockpicker"));
-            jetpackData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Jetpack"));
-            stunGrenadeData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Stun grenade"));
-            homemadeFlashbangData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Homemade flashbang"));
-            tzpInhalantData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("TZP-Inhalant"));
-            radarBoosterData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Radar-booster"));
+                remoteRadarData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Remote Radar"));
+                utilityBeltData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Utility Belt"));
+                hackingToolData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Hacking Tool"));
+                pingerData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Pinger"));
 
-            remoteRadarData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Remote Radar"));
-            utilityBeltData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Utility Belt"));
-            hackingToolData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Hacking Tool"));
-            pingerData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Pinger"));
+                portableTeleData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Portable Tele"));
+                advancedPortableTeleData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Advanced Portable Tele"));
+                peeperData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Peeper"));
+                medkitData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Medkit"));
 
-            portableTeleData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Portable Tele"));
-            advancedPortableTeleData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Advanced Portable Tele"));
-            peeperData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Peeper"));
-            medkitData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Medkit"));
+                binocularsData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Binoculars"));
+                mapperData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Mapper"));
+                toothpasteData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Toothpaste"));
+            }
+            
+            if (ConfigSettings.addKeySlot.Value)
+            {
+                ReservedItemSlotData keySlotData = ReservedItemSlotData.CreateReservedItemSlotData("key_slot", ConfigSettings.overrideKeySlotPriority.Value, ConfigSettings.overrideKeySlotPrice.Value);
+                keyData = keySlotData.AddItemToReservedItemSlot(new ReservedItemData("Key"));
 
-            binocularsData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Binoculars"));
-            mapperData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Mapper"));
-            toothpasteData = utilitySlotData.AddItemToReservedItemSlot(new ReservedItemData("Toothpaste"));
+                if (ConfigSettings.moveLockpickerToKeySlot.Value)
+                {
+                    if (!ConfigSettings.disableUtilitySlot.Value)
+                    {
+                        keySlotData.AddItemToReservedItemSlot(lockpickerData);
+                        utilitySlotData.RemoveItemFromReservedItemSlot(lockpickerData.itemName);
+                    }
+                    else
+                        keySlotData.AddItemToReservedItemSlot(new ReservedItemData("Lockpicker"));
+                }
+            }
         }
 
 
@@ -120,6 +144,22 @@ namespace ReservedUtilitySlot
                 {
                     LogWarning("Removing item from reserved item slot. Item: " + itemName);
                     utilitySlotData.RemoveItemFromReservedItemSlot(itemName);
+                }
+            }
+
+
+            if (keySlotData != null)
+            {
+                string[] additionalKeyItemNames = ConfigSettings.ParseAdditionalKeyItems();
+                foreach (string itemName in additionalKeyItemNames)
+                {
+                    if (!keySlotData.ContainsItem(itemName))
+                    {
+                        LogWarning("Adding additional item to reserved key item slot. Item: " + itemName);
+                        var itemData = new ReservedItemData(itemName);
+                        additionalKeyItemData.Add(itemData);
+                        keySlotData.AddItemToReservedItemSlot(itemData);
+                    }
                 }
             }
         }

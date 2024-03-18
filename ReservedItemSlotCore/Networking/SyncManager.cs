@@ -83,11 +83,20 @@ namespace ReservedItemSlotCore.Networking
                     AddReservedItemSlotData(newReservedItemSlot);
 
                     if (!enablePurchasingItemSlots)
-                        SessionManager.UnlockReservedItemSlot(reservedItemSlot);
+                        SessionManager.UnlockReservedItemSlot(newReservedItemSlot);
                 }
 
                 if (enablePurchasingItemSlots)
                     SessionManager.LoadGameValues();
+
+                if (enablePurchasingItemSlots)
+                {
+                    foreach (var reservedItemSlot in unlockableReservedItemSlots)
+                    {
+                        if (!reservedItemSlot.isUnlocked && reservedItemSlot.purchasePrice <= 0)
+                            SessionManager.UnlockReservedItemSlot(reservedItemSlot);
+                    }
+                }
 
                 isSynced = true;
                 OnSyncedWithServer();

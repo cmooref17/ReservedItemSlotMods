@@ -14,9 +14,10 @@ using ReservedItemSlotCore.Data;
 using ReservedWalkieSlot.Input;
 using ReservedWalkieSlot.Config;
 
+
 namespace ReservedWalkieSlot
 {
-    [BepInPlugin("FlipMods.ReservedWalkieSlot", "ReservedWalkieSlot", "2.0.0")]
+    [BepInPlugin("FlipMods.ReservedWalkieSlot", "ReservedWalkieSlot", "2.0.2")]
     [BepInDependency("FlipMods.ReservedItemSlotCore", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin

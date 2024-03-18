@@ -75,7 +75,7 @@ namespace ReservedItemSlotCore.Data
 
         public bool HasEmptySlotForItem(string itemName)
         {
-            if (!SessionManager.allReservedItemData.TryGetValue(itemName, out var itemData) || !itemData.HasUnlockedParentSlot())
+            if (!SessionManager.TryGetUnlockedItemData(itemName, out var itemData) || !itemData.HasUnlockedParentSlot())
                 return false;
 
             for (int i = 0; i < SessionManager.numReservedItemSlotsUnlocked; i++)

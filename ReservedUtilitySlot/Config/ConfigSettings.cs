@@ -13,6 +13,13 @@ namespace ReservedUtilitySlot.Config
         public static ConfigEntry<string> additionalItemsInSlot;
         public static ConfigEntry<string> removeItemsFromSlot;
 
+        public static ConfigEntry<bool> disableUtilitySlot;
+        public static ConfigEntry<bool> addKeySlot;
+        public static ConfigEntry<int> overrideKeySlotPriority;
+        public static ConfigEntry<int> overrideKeySlotPrice;
+        public static ConfigEntry<string> addAdditionalItemsToKeySlot;
+        public static ConfigEntry<bool> moveLockpickerToKeySlot;
+
         public static Dictionary<string, ConfigEntryBase> currentConfigEntries = new Dictionary<string, ConfigEntryBase>();
 
 
@@ -20,10 +27,17 @@ namespace ReservedUtilitySlot.Config
         {
             Plugin.Log("BindingConfigs");
 
-            overrideItemSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideUtilitySlotPriority", 50, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
-            overridePurchasePrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideUtilitySlotPrice", 200, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
-            additionalItemsInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalItemsInSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
-            removeItemsFromSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "RemoveItemsFromSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). Removes the specified items from this reserved item slot.When removing items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
+            overrideItemSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "UtilitySlotPriorityOverride", 80, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
+            overridePurchasePrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "UtilitySlotPriceOverride", 200, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
+            additionalItemsInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalItemsInSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered.\nNOTE: IF YOU ARE USING A TRANSLATION MOD, YOU MAY NEED TO ADD THE TRANSLATED NAME OF ANY ITEM YOU WANT IN THIS SLOT."));
+            removeItemsFromSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "RemoveItemsFromSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). Removes the specified items from this reserved item slot.When removing items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems.\nCURRENT ITEMS IN SLOT: \"Extension ladder\", \"Lockpicker\", \"Jetpack\", \"Stun grenade\", \"Homemade flashbang\", \"TZP-Inhalant\", \"Radar-booster\", \"Remote Radar\", \"Utility Belt\", \"Hacking Tool\", \"Pinger\", \"Portable Tele\", \"Advanced Portable Tele\", \"Peeper\", \"Medkit\", \"Binoculars\", \"Mapper\", \"Toothpaste\" (you got a problem with toothpaste??)"));
+
+            disableUtilitySlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "DisableUtilitySlot", false, "[Host only] Disables the utility slot. Use this if you only want the reserved key slot."));
+            addKeySlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AddKeySlot", false, "[Host only] Adds a reserved item slot for the key item. By default, the slot will appear on the left side of the screen, unless given a positive item slot priority."));
+            overrideKeySlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "KeySlotPriorityOverride", -50, "[Host only] Manually set the priority for the key item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
+            overrideKeySlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "KeySlotPriceOverride", 50, "[Host only] Manually set the price for the key item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
+            moveLockpickerToKeySlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "MoveLockpickerToKeySlot", false, "[Host only] Moves the lockpicker to the key slot. This setting will do nothing if the reserved key slot is disabled in the config."));
+            addAdditionalItemsToKeySlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalItemsInKeySlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems.\nNOTE: IF YOU ARE USING A TRANSLATION MOD, YOU MAY NEED TO ADD THE TRANSLATED NAME OF ANY ITEM YOU WANT IN THIS SLOT."));
 
             additionalItemsInSlot.Value = additionalItemsInSlot.Value.Replace(", ", ",");
             removeItemsFromSlot.Value = removeItemsFromSlot.Value.Replace(", ", ",");
@@ -39,26 +53,9 @@ namespace ReservedUtilitySlot.Config
         }
 
 
-        public static string[] ParseAdditionalItems()
-        {
-            if (additionalItemsInSlot.Value == "")
-                return new string[0];
-
-            List<string> additionalItemNames = new List<string>(additionalItemsInSlot.Value.Split(','));
-            additionalItemNames = additionalItemNames.Where(s => s.Length >= 1).ToList();
-            return additionalItemNames.ToArray();
-        }
-
-
-        public static string[] ParseRemoveItems()
-        {
-            if (removeItemsFromSlot.Value == "")
-                return new string[0];
-
-            List<string> removeItemNames = new List<string>(removeItemsFromSlot.Value.Split(','));
-            removeItemNames = removeItemNames.Where(s => s.Length >= 1).ToList();
-            return removeItemNames.ToArray();
-        }
+        public static string[] ParseAdditionalItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(additionalItemsInSlot.Value);
+        public static string[] ParseRemoveItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(removeItemsFromSlot.Value);
+        public static string[] ParseAdditionalKeyItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(addAdditionalItemsToKeySlot.Value);
 
 
         public static void TryRemoveOldConfigSettings()

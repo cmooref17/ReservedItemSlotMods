@@ -41,7 +41,7 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPrefix]
         public static bool PreventInvertedScrollingReservedHotbar(InputAction.CallbackContext context)
         {
-            if (StartOfRound.Instance.localPlayerUsingController || SessionManager.numReservedItemSlotsUnlocked <= 0 || HUDPatcher.reservedItemSlots == null) // || SessionManager.preGame)
+            if (StartOfRound.Instance.localPlayerUsingController || SessionManager.numReservedItemSlotsUnlocked <= 0 || HUDPatcher.reservedItemSlots == null || localPlayerController.inTerminalMenu)
                 return true;
 
             if (ReservedPlayerData.localPlayerData.currentItemSlotIsReserved)

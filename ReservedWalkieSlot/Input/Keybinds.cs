@@ -10,9 +10,9 @@ using ReservedItemSlotCore.Patches;
 using ReservedWalkieSlot.Patches;
 using ReservedWalkieSlot.Config;
 
+
 namespace ReservedWalkieSlot.Input
 {
-
 	[HarmonyPatch]
 	internal static class Keybinds
     {
@@ -49,7 +49,8 @@ namespace ReservedWalkieSlot.Input
 
         [HarmonyPatch(typeof(StartOfRound), "OnEnable")]
         [HarmonyPostfix]
-        public static void OnEnable() {
+        public static void OnEnable()
+        {
             Asset.Enable();
             ActivateWalkieAction.performed += OnPressWalkieButtonPerformed;
             ActivateWalkieAction.canceled += OnReleaseWalkieButtonPerformed;
@@ -58,7 +59,8 @@ namespace ReservedWalkieSlot.Input
 
         [HarmonyPatch(typeof(StartOfRound), "OnDisable")]
         [HarmonyPostfix]
-        public static void OnDisable() {
+        public static void OnDisable()
+        {
             Asset.Disable();
             ActivateWalkieAction.performed -= OnPressWalkieButtonPerformed;
             ActivateWalkieAction.canceled -= OnReleaseWalkieButtonPerformed;
@@ -71,6 +73,7 @@ namespace ReservedWalkieSlot.Input
         {
             if (localPlayerController == null || !localPlayerController.isPlayerControlled || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
                 return;
+
             WalkieTalkie mainWalkie = WalkiePatcher.GetMainWalkie(localPlayerController);
             if (!context.performed || mainWalkie == null || !mainWalkie.isBeingUsed || ShipBuildModeManager.Instance.InBuildMode)
                 return;

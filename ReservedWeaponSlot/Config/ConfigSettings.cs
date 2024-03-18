@@ -35,28 +35,27 @@ namespace ReservedWeaponSlot.Config
         public static void BindConfigSettings()
         {
             Plugin.Log("BindingConfigs");
-
             
-            overrideMeleeSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideMeleeWeaponSlotPriority", 60, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
-            overrideMeleeSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideMeleeWeaponSlotPrice", 150, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
+            overrideMeleeSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "MeleeWeaponSlotPriorityOverride", 100, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
+            overrideMeleeSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "MeleeWeaponSlotPriceOverride", 150, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
 
-            overrideRangedSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideRangedWeaponSlotPriority", 59, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
-            overrideRangedSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideRangedWeaponSlotPrice", 250, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
+            overrideRangedSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "RangedWeaponSlotPriorityOverride", 99, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
+            overrideRangedSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "RangedWeaponSlotPriceOverride", 250, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
 
-            combineMeleeAndRangedWeaponSlots = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "CombineMeleeAndRangedWeaponSlots", true, "[Host only]     "));
-            overrideCombinedWeaponSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideCombinedWeaponSlotPrice", 400, "[Host only] Only applies if CombineMeleeAndRangedWeaponSlots is true. Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
+            combineMeleeAndRangedWeaponSlots = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "CombineMeleeAndRangedWeaponSlots", true, "[Host only] If set to false, melee and ranged weapons will be added to two different reserved item slots. If purchasing item slots is enabled, each slots will need to be purchased separately. (prices for each will be reduced)"));
+            overrideCombinedWeaponSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "CombinedWeaponSlotPriceOverride", 400, "[Host only] Only applies if CombineMeleeAndRangedWeaponSlots is true. Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
 
             disableReservedAmmoSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "DisableReservedAmmoSlot", false, "[Host only] Disables the reserved ammo slot. Will sync with clients."));
-            overrideAmmoSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideAmmoSlotPriority", -10, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
-            overrideAmmoSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "OverrideAmmoSlotPrice", 150, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
+            overrideAmmoSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AmmoSlotPriorityOverride", -10, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
+            overrideAmmoSlotPrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AmmoSlotPriceOverride", 150, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
 
-            additionalMeleeWeaponsInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalMeleeWeaponsInSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
-            additionalRangedWeaponsInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalRangedWeaponsInSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
-            additionalAmmoInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalAmmoInSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
+            additionalMeleeWeaponsInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalMeleeWeaponsInSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems.\nNOTE: IF YOU ARE USING A TRANSLATION MOD, YOU MAY NEED TO ADD THE TRANSLATED NAME OF ANY ITEM YOU WANT IN THIS SLOT."));
+            additionalRangedWeaponsInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalRangedWeaponsInSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems.\nNOTE: IF YOU ARE USING A TRANSLATION MOD, YOU MAY NEED TO ADD THE TRANSLATED NAME OF ANY ITEM YOU WANT IN THIS SLOT."));
+            additionalAmmoInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalAmmoInSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems.\nNOTE: IF YOU ARE USING A TRANSLATION MOD, YOU MAY NEED TO ADD THE TRANSLATED NAME OF ANY ITEM YOU WANT IN THIS SLOT."));
 
-            removeItemsFromMeleeWeaponsSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "RemoveMeleeWeaponsFromSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). Removes the specified items from this reserved item slot. When removing items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
-            removeItemsFromRangedWeaponsSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "RemoveRangedWeaponsFromSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). Removes the specified items from this reserved item slot. When removing items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
-            removeItemsFromAmmoSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "RemoveAmmoItemsFromSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). Removes the specified items from this reserved item slot.When removing items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems. As of now, additional items added to reserved item slots cannot be seen on players while holstered."));
+            removeItemsFromMeleeWeaponsSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "RemoveMeleeWeaponsFromSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). Removes the specified items from this reserved item slot. When removing items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems.\nCURRENT MELEE WEAPONS IN SLOT: \"Shovel\", \"Stop sign\", \"Yield sign\", \"Toy Hammer\", \"Australium Shovel\""));
+            removeItemsFromRangedWeaponsSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "RemoveRangedWeaponsFromSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). Removes the specified items from this reserved item slot. When removing items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems.\nCURRENT RANGED WEAPONS IN SLOT: \"Shotgun\", \"Zap gun\", \"Rocket Launcher\", \"Flaregun\", \"Revolver\""));
+            removeItemsFromAmmoSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "RemoveAmmoItemsFromSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). Removes the specified items from this reserved item slot.When removing items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems.\nCURRENT AMMO ITEMS IN SLOT: \"Ammo\", \"Shells\", \"Emergency Flare (ammo)\""));
 
             additionalMeleeWeaponsInSlot.Value = additionalMeleeWeaponsInSlot.Value.Replace(", ", ",");
             additionalRangedWeaponsInSlot.Value = additionalRangedWeaponsInSlot.Value.Replace(", ", ",");
@@ -76,70 +75,14 @@ namespace ReservedWeaponSlot.Config
         }
 
 
-        public static string[] ParseAdditionalMeleeWeaponItems()
-        {
-            if (additionalMeleeWeaponsInSlot.Value == "")
-                return new string[0];
+        public static string[] ParseAdditionalMeleeWeaponItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(additionalMeleeWeaponsInSlot.Value);
+        public static string[] ParseAdditionalRangedWeaponItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(additionalRangedWeaponsInSlot.Value);
+        public static string[] ParseAdditionalAmmoItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(additionalAmmoInSlot.Value);
+        
 
-            List<string> additionalItemNames = new List<string>(additionalMeleeWeaponsInSlot.Value.Split(','));
-            additionalItemNames = additionalItemNames.Where(s => s.Length >= 1).ToList();
-            return additionalItemNames.ToArray();
-        }
-
-
-        public static string[] ParseAdditionalRangedWeaponItems()
-        {
-            if (additionalRangedWeaponsInSlot.Value == "")
-                return new string[0];
-
-            List<string> additionalItemNames = new List<string>(additionalRangedWeaponsInSlot.Value.Split(','));
-            additionalItemNames = additionalItemNames.Where(s => s.Length >= 1).ToList();
-            return additionalItemNames.ToArray();
-        }
-
-
-        public static string[] ParseAdditionalAmmoItems()
-        {
-            if (additionalAmmoInSlot.Value == "")
-                return new string[0];
-
-            List<string> additionalItemNames = new List<string>(additionalAmmoInSlot.Value.Split(','));
-            additionalItemNames = additionalItemNames.Where(s => s.Length >= 1).ToList();
-            return additionalItemNames.ToArray();
-        }
-
-
-        public static string[] ParseRemoveMeleeWeaponItems()
-        {
-            if (removeItemsFromMeleeWeaponsSlot.Value == "")
-                return new string[0];
-
-            List<string> removeItemNames = new List<string>(removeItemsFromMeleeWeaponsSlot.Value.Split(','));
-            removeItemNames = removeItemNames.Where(s => s.Length >= 1).ToList();
-            return removeItemNames.ToArray();
-        }
-
-
-        public static string[] ParseRemoveRangedWeaponItems()
-        {
-            if (removeItemsFromRangedWeaponsSlot.Value == "")
-                return new string[0];
-
-            List<string> removeItemNames = new List<string>(removeItemsFromRangedWeaponsSlot.Value.Split(','));
-            removeItemNames = removeItemNames.Where(s => s.Length >= 1).ToList();
-            return removeItemNames.ToArray();
-        }
-
-
-        public static string[] ParseRemoveAmmoItems()
-        {
-            if (removeItemsFromAmmoSlot.Value == "")
-                return new string[0];
-
-            List<string> removeItemNames = new List<string>(removeItemsFromAmmoSlot.Value.Split(','));
-            removeItemNames = removeItemNames.Where(s => s.Length >= 1).ToList();
-            return removeItemNames.ToArray();
-        }
+        public static string[] ParseRemoveMeleeWeaponItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(removeItemsFromMeleeWeaponsSlot.Value);
+        public static string[] ParseRemoveRangedWeaponItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(removeItemsFromRangedWeaponsSlot.Value);
+        public static string[] ParseRemoveAmmoItems() => ReservedItemSlotCore.Config.ConfigSettings.ParseItemNames(removeItemsFromAmmoSlot.Value);
 
 
         public static void TryRemoveOldConfigSettings()

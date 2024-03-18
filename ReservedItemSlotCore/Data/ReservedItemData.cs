@@ -20,33 +20,6 @@ namespace ReservedItemSlotCore.Data
         public Vector3 holsteredPositionOffset = Vector3.zero;
         public Vector3 holsteredRotationOffset = Vector3.zero;
 
-        /*
-        public static ReservedItemData RegisterReservedItem(string itemName, PlayerBone holsteredParentBone = 0, Vector3 holsteredPositionOffset = default, Vector3 holsteredRotationOffset = default)
-        {
-            if (allReservedItems.TryGetValue(itemName, out var reservedItemData))
-            {
-                Plugin.LogWarning("Item: " + itemName + " already registered as a reserved item. Current reserved item data will be unchanged, but new reserved slot parents can be set.");
-                return reservedItemData;
-            }
-            var newReservedItemData = new ReservedItemData(itemName, holsteredParentBone, holsteredPositionOffset, holsteredRotationOffset);
-            allReservedItems.Add(itemName, newReservedItemData);
-            return newReservedItemData;
-        }
-
-
-        public static void RegisterReservedItem(ReservedItemData reservedItemData)
-        {
-            if (allReservedItems.ContainsKey(reservedItemData.itemName))
-            {
-                Plugin.LogWarning("Item: " + reservedItemData.itemName + " already registered as a reserved item. Current reserved item data will be unchanged, but new reserved slot parents can be set.");
-                return;
-            }
-            allReservedItems.Add(reservedItemData.itemName, reservedItemData);
-        }
-        */
-
-        //public static string CleanItemName(string itemName) => itemName.ToLower().Replace("_", " ").Replace("-", " ");
-
 
         public ReservedItemData(string itemName, PlayerBone holsteredParentBone = 0, Vector3 holsteredPositionOffset = default, Vector3 holsteredRotationOffset = default)
         {
