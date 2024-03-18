@@ -12,7 +12,7 @@ using System.Reflection;
 
 namespace ReservedItemSlotCore.Compatibility
 {
-    public class GeneralImprovements_Patcher
+    internal static class GeneralImprovements_Patcher
     {
         public static bool Enabled { get { return Plugin.IsModLoaded("ShaosilGaming.GeneralImprovements"); } }
 

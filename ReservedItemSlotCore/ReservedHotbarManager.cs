@@ -1,5 +1,6 @@
 ﻿using GameNetcodeStuff;
 using HarmonyLib;
+using ReservedItemSlotCore.Compatibility;
 using ReservedItemSlotCore.Config;
 using ReservedItemSlotCore.Data;
 using ReservedItemSlotCore.Input;
@@ -144,12 +145,18 @@ namespace ReservedItemSlotCore
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled)
                 return false;
 
-            return !(ReservedPlayerData.localPlayerData.grabbingReservedItemData != null || localPlayerController.performingEmote || localPlayerController.isGrabbingObjectAnimation || localPlayerController.quickMenuManager.isMenuOpen || localPlayerController.inSpecialInteractAnimation || localPlayerData.throwingObject || localPlayerController.isTypingChat || localPlayerController.twoHanded || localPlayerController.activatingItem || localPlayerController.jetpackControls || localPlayerController.disablingJetpackControls || localPlayerController.inTerminalMenu || localPlayerController.isPlayerDead || localPlayerData.timeSinceSwitchingSlots < 0.3f);
+            if (TooManyEmotes_Patcher.Enabled && TooManyEmotes_Patcher.IsLocalPlayerPerformingCustomEmote() && !TooManyEmotes_Patcher.CanMoveWhileEmoting())
+                return false;
+
+            return !(ReservedPlayerData.localPlayerData.grabbingReservedItemData != null || localPlayerController.isGrabbingObjectAnimation || localPlayerController.quickMenuManager.isMenuOpen || localPlayerController.inSpecialInteractAnimation || localPlayerData.throwingObject || localPlayerController.isTypingChat || localPlayerController.twoHanded || localPlayerController.activatingItem || localPlayerController.jetpackControls || localPlayerController.disablingJetpackControls || localPlayerController.inTerminalMenu || localPlayerController.isPlayerDead || localPlayerData.timeSinceSwitchingSlots < 0.3f);
         }
 
 
         internal static bool CanGrabReservedItem()
         {
+            if (TooManyEmotes_Patcher.Enabled && TooManyEmotes_Patcher.IsLocalPlayerPerformingCustomEmote() && !TooManyEmotes_Patcher.CanMoveWhileEmoting())
+                return false;
+
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled || localPlayerData.GetNumHeldReservedItems() == 0 || localPlayerData.isGrabbingReservedItem || (localPlayerData.inReservedHotbarSlots && !ConfigSettings.toggleFocusReservedHotbar.Value && !isToggledInReservedSlots))
                 return false;
 
