@@ -147,7 +147,7 @@ namespace ReservedItemSlotCore.Patches
                 return true;
 
             var interactRay = new Ray(__instance.gameplayCamera.transform.position, __instance.gameplayCamera.transform.forward);
-            if (Physics.Raycast(interactRay, out var hit, __instance.grabDistance, PlayerPatcher.INTERACTABLE_OBJECT_MASK) && hit.collider.gameObject.layer != 8 && hit.collider.tag == "PhysicsProp")
+            if (Physics.Raycast(interactRay, out var hit, __instance.grabDistance, INTERACTABLE_OBJECT_MASK) && hit.collider.gameObject.layer != 8 && hit.collider.tag == "PhysicsProp")
             {
                 var currentlyGrabbingObject = hit.collider.transform.gameObject.GetComponent<GrabbableObject>();
                 if (currentlyGrabbingObject != null && !__instance.inSpecialInteractAnimation && !currentlyGrabbingObject.isHeld && !currentlyGrabbingObject.isPocketed)
@@ -200,7 +200,6 @@ namespace ReservedItemSlotCore.Patches
                         var grabbingReservedItemSlotData = playerData.GetFirstEmptySlotForReservedItem(grabbingItemData.itemName);
                         if (grabbingReservedItemSlotData != null)
                         {
-                            playerData.grabbingReservedItemSlotData = grabbingReservedItemSlotData;
                             playerData.grabbingReservedItemSlotData = grabbingReservedItemSlotData;
                             playerData.grabbingReservedItemData = grabbingItemData;
                             playerData.grabbingReservedItem = grabbingObject;

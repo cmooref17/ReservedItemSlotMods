@@ -1,5 +1,6 @@
 ﻿using GameNetcodeStuff;
 using HarmonyLib;
+using ReservedItemSlotCore.Config;
 using ReservedItemSlotCore.Data;
 using ReservedItemSlotCore.Networking;
 using System;
@@ -9,13 +10,13 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
+
 namespace ReservedItemSlotCore.Patches
 {
     [HarmonyPatch]
     internal static class ReservedItemsPatcher
     {
         public static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
-
         public static bool ignoreMeshOverride = false;
 
 
@@ -23,6 +24,9 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPostfix]
         public static void OnPocketReservedItem(GrabbableObject __instance)
         {
+            if (!ConfigSettings.showReservedItemsHolstered.Value)
+                return;
+
             if (__instance.playerHeldBy == null)
                 return;
 
@@ -46,6 +50,9 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPostfix]
         public static void OnEquipReservedItem(GrabbableObject __instance)
         {
+            if (!ConfigSettings.showReservedItemsHolstered.Value)
+                return;
+
             if (__instance.playerHeldBy == null)
                 return;
 
@@ -80,6 +87,9 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPostfix]
         public static void SetPositionOffset(GrabbableObject __instance)
         {
+            if (!ConfigSettings.showReservedItemsHolstered.Value)
+                return;
+
             if (__instance.playerHeldBy == null || __instance.parentObject == null)
                 return;
 
@@ -99,6 +109,9 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPrefix]
         public static void OnEnableItemMeshes(ref bool enable, GrabbableObject __instance)
         {
+            if (!ConfigSettings.showReservedItemsHolstered.Value)
+                return;
+
             if (__instance.playerHeldBy != null && !ignoreMeshOverride && ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData))
             {
                 if (SessionManager.TryGetUnlockedItemData(__instance, out var reservedItemData) && playerData.IsItemInReservedItemSlot(__instance) && reservedItemData.showOnPlayerWhileHolstered && playerData.currentSelectedItem != __instance && !PlayerPatcher.ReservedItemIsBeingGrabbed(__instance))

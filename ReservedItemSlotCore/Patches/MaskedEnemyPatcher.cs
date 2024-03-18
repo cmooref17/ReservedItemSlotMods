@@ -10,6 +10,7 @@ using UnityEngine;
 using Unity.Netcode;
 using ReservedItemSlotCore.Data;
 using GameNetcodeStuff;
+using ReservedItemSlotCore.Config;
 
 namespace ReservedItemSlotCore.Patches
 {
@@ -24,6 +25,9 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPrefix]
         public static void InitMaskedEnemy(MaskedPlayerEnemy __instance)
         {
+            if (!ConfigSettings.showReservedItemsHolsteredMaskedEnemy.Value)
+                return;
+
             if (!MaskedEnemyData.allMaskedEnemyData.ContainsKey(__instance))
                 MaskedEnemyData.allMaskedEnemyData.Add(__instance, new MaskedEnemyData(__instance));
         }
@@ -45,6 +49,9 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPostfix]
         public static void Update(MaskedPlayerEnemy __instance)
         {
+            if (!ConfigSettings.showReservedItemsHolsteredMaskedEnemy.Value)
+                return;
+
             if (!MaskedEnemyData.allMaskedEnemyData.TryGetValue(__instance, out var maskedEnemyData))
                 return;
 
@@ -55,6 +62,9 @@ namespace ReservedItemSlotCore.Patches
 
         public static void AddReservedItemsToMaskedEnemy(MaskedPlayerEnemy maskedEnemy)
         {
+            if (!ConfigSettings.showReservedItemsHolsteredMaskedEnemy.Value)
+                return;
+
             if (!MaskedEnemyData.allMaskedEnemyData.TryGetValue(maskedEnemy, out var maskedEnemyData))
                 return;
 

@@ -16,7 +16,11 @@ namespace ReservedItemSlotCore.Config
         public static ConfigEntry<bool> displayNegativePrioritySlotsLeftSideOfScreen;
         public static ConfigEntry<string> focusReservedHotbarHotkey;
         public static ConfigEntry<bool> toggleFocusReservedHotbar;
+        //public static ConfigEntry<bool> allowScrollingBetweenHotbars;
         public static ConfigEntry<bool> preventReservedItemSlotFade;
+
+        public static ConfigEntry<bool> showReservedItemsHolstered;
+        public static ConfigEntry<bool> showReservedItemsHolsteredMaskedEnemy;
 
         public static ConfigEntry<int> numCustomItemSlots;
         public static List<CustomItemSlotConfigEntry> customItemSlotConfigs = new List<CustomItemSlotConfigEntry>();
@@ -33,8 +37,12 @@ namespace ReservedItemSlotCore.Config
             forceEnableThisModIfNotEnabledOnHost = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ForceEnableThisModIfNotEnabledOnHost", false, "This is disabled by default for a reason, and it is NOT recommended to enable this, especially in public lobbies. Enabling this when the host does not have the ReservedItemSlotCore mod CAN, and likely WILL cause de-sync issues. You have been warned. This setting only applies if you are a non-host client, and the host does not have this mod."));
             displayNegativePrioritySlotsLeftSideOfScreen = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "DisplayNegativePrioritySlotsLeftSideOfScreen", true, "For any reserved item slot mods that have a negative priority, by default, those slots will appear on the left side of the screen, rather than the right. Setting this option to false will have them appear on top of the slots on the right side."));
             focusReservedHotbarHotkey = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "FocusReservedItemSlotsHotkey", "<Keyboard>/leftAlt", "This setting will be ignored if InputUtils is installed and enabled. (I recommend running InputUtils to edit keybinds in the in-game settings)"));
-            toggleFocusReservedHotbar = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ToggleFocusReservedHotbar", false, "If set to true, swapping to the reserved hotbar slots will be toggled when pressing the hotkey rather than while holding the hotkey. Setting this option to true may have bugs at this current time."));
+            toggleFocusReservedHotbar = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ToggleFocusReservedHotbar", false, "If true, swapping to the reserved hotbar slots will be toggled when pressing the hotkey rather than while holding the hotkey. Setting this option to true may have bugs at this current time."));
+            //allowScrollingBetweenHotbars = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "AllowScrollingBetweenHotbars", false, "If true, you will be able to scroll between hotbars. This will disable the hotkey for swapping between the two. \nNOTE: This will also disable fixing the scroll direction in the reserved hotbars to match the direction you scroll."));
             preventReservedItemSlotFade = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "PreventReservedHotbarSlotFade", false, "If true, the reserved hotbar slots will not fade with the rest of the default slots."));
+
+            showReservedItemsHolstered = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ShowReservedItemsHolsteredOnPlayers", true, "If true, held items in the reserved item slots that are not currently in the player's hand, will be shown holstered on the player. Example: The reserved flashlight will show up on the player's shoulder when not in their hands. This will do nothing for items that do not have a defined holstered location on the player."));
+            showReservedItemsHolsteredMaskedEnemy = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ShowReservedItemsHolsteredOnMaskedEnemies", true, "If true, masked enemies will appear to have reserved items holstered when mimicking a player. The items shown will be the same items that the player, who the masked enemy is mimicking, has in their inventory. This will do nothing for items that do not have a defined holstered location on the player."));
 
             numCustomItemSlots = AddConfigEntry(Plugin.instance.Config.Bind("Custom Reserved Item Slots", "NumCustomItemSlots", 1, "[Host only] Set the number of custom reserved item slots you want to add. Custom slots will update in the config when you start the game. LIMITED TO 10"));
             numCustomItemSlots.Value = Mathf.Clamp(numCustomItemSlots.Value, 0, 10);

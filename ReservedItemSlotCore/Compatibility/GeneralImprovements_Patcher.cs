@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
-using GeneralImprovements.Items;
+//using GeneralImprovements.Items;
 using System.Reflection;
 
 namespace ReservedItemSlotCore.Compatibility
