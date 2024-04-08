@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ReservedItemSlotCore.Networking;
+using System.Reflection;
 
 namespace ReservedItemSlotCore.Data
 {
@@ -19,7 +20,7 @@ namespace ReservedItemSlotCore.Data
         public PlayerControllerB playerController;
         public bool isLocalPlayer { get { return playerController != null && playerController == StartOfRound.Instance?.localPlayerController; } }
         public int currentItemSlot { get { return playerController.currentItemSlot; } }
-        public GrabbableObject currentSelectedItem { get { return itemSlots != null && currentItemSlot >= 0 && currentItemSlot < itemSlots.Length ? itemSlots[currentItemSlot] : null; } }
+        public GrabbableObject currentlySelectedItem { get { return itemSlots != null && currentItemSlot >= 0 && currentItemSlot < itemSlots.Length ? itemSlots[currentItemSlot] : null; } }
         public bool currentItemSlotIsReserved { get { return currentItemSlot >= reservedHotbarStartIndex && currentItemSlot < reservedHotbarStartIndex + SessionManager.numReservedItemSlotsUnlocked; } }
         public ReservedItemData grabbingReservedItemData = null;
         public ReservedItemSlotData grabbingReservedItemSlotData = null;
@@ -46,14 +47,14 @@ namespace ReservedItemSlotCore.Data
         }
 
 
-        public bool IsReservedItemSlot(int index) => index >= reservedHotbarStartIndex && index < reservedHotbarStartIndex + SessionManager.numReservedItemSlotsUnlocked;
+        public bool IsReservedItemSlot(int itemSlotIndex) => itemSlotIndex >= reservedHotbarStartIndex && itemSlotIndex < reservedHotbarStartIndex + SessionManager.numReservedItemSlotsUnlocked;
         public int GetNumHeldReservedItems()
         {
             int num = 0;
             for (int i = reservedHotbarStartIndex; i < reservedHotbarEndIndexExcluded; i++)
             {
                 var item = playerController.ItemSlots[i];
-                num += (item != null && SyncManager.IsReservedItem(item.itemProperties.itemName) ? 1 : 0);
+                num += (item != null ? 1 : 0);
             }
             return num;
         }
@@ -73,7 +74,10 @@ namespace ReservedItemSlotCore.Data
         }
 
 
-        public bool HasEmptySlotForItem(string itemName)
+        public bool HasEmptySlotForReservedItem(GrabbableObject grabbableObject) => grabbableObject?.itemProperties != null ? HasEmptySlotForReservedItem(grabbableObject.itemProperties.itemName) : false;
+
+
+        public bool HasEmptySlotForReservedItem(string itemName)
         {
             if (!SessionManager.TryGetUnlockedItemData(itemName, out var itemData) || !itemData.HasUnlockedParentSlot())
                 return false;
@@ -91,6 +95,9 @@ namespace ReservedItemSlotCore.Data
             }
             return false;
         }
+
+
+        public ReservedItemSlotData GetFirstEmptySlotForReservedItem(GrabbableObject grabbableObject) => grabbableObject?.itemProperties != null ? GetFirstEmptySlotForReservedItem(grabbableObject.itemProperties.itemName) : null;
 
 
         public ReservedItemSlotData GetFirstEmptySlotForReservedItem(string itemName)
@@ -153,5 +160,22 @@ namespace ReservedItemSlotCore.Data
             return false;
         }
         //GetParentReservedItemSlot(grabbableObject) != null;
+
+
+
+        internal int CallGetNextItemSlot(bool forward)
+        {
+            MethodInfo method = playerController.GetType().GetMethod("NextItemSlot", BindingFlags.NonPublic | BindingFlags.Instance);
+            int index = (int)method.Invoke(playerController, new object[] { forward });
+            return index;
+        }
+
+
+        internal void CallSwitchToItemSlot(int index, GrabbableObject fillSlotWithItem = null)
+        {
+            MethodInfo method = playerController.GetType().GetMethod("SwitchToItemSlot", BindingFlags.NonPublic | BindingFlags.Instance);
+            method.Invoke(playerController, new object[] { index, fillSlotWithItem });
+            timeSinceSwitchingSlots = 0;
+        }
     }
 }

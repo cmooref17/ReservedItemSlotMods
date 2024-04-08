@@ -19,16 +19,14 @@ namespace ReservedItemSlotCore.Networking
     internal static class SyncManager
     {
         public static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
-        public static bool enablePurchasingItemSlots = false;
-        public static bool canUseModDisabledOnHost { get { return ConfigSettings.forceEnableThisModIfNotEnabledOnHost.Value; } }
+        public static bool enablePurchasingItemSlots { get; internal set; } = false;
+        internal static bool canUseModDisabledOnHost { get { return ConfigSettings.forceEnableThisModIfNotEnabledOnHost.Value; } }
 
-        public static bool isSynced = false;
-        static bool requestedSyncHeldObjects = false;
+        public static bool isSynced { get; internal set; } = false;
+        private static bool requestedSyncHeldObjects = false;
 
         public static List<ReservedItemSlotData> unlockableReservedItemSlots = new List<ReservedItemSlotData>();
         public static Dictionary<string, ReservedItemSlotData> unlockableReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
-
-        private static List<ReservedItemSlotData> pendingUnlockedItemSlots = new List<ReservedItemSlotData>();
 
         public static List<ReservedItemData> reservedItems = new List<ReservedItemData>();
         public static Dictionary<string, ReservedItemData> reservedItemsDict = new Dictionary<string, ReservedItemData>();
@@ -54,7 +52,6 @@ namespace ReservedItemSlotCore.Networking
             unlockableReservedItemSlots?.Clear();
             unlockableReservedItemSlotsDict?.Clear();
             enablePurchasingItemSlots = false;
-            pendingUnlockedItemSlots?.Clear();
             reservedItems?.Clear();
             reservedItemsDict?.Clear();
         }
@@ -278,8 +275,11 @@ namespace ReservedItemSlotCore.Networking
 
             Plugin.Log("Receiving sync from server.");
 
-            reader.ReadValue(out enablePurchasingItemSlots);
+            reader.ReadValue(out bool enablePurchasingItemSlots);
             reader.ReadValue(out int numEntries);
+
+            SyncManager.enablePurchasingItemSlots = enablePurchasingItemSlots;
+
             for (int i = 0; i < numEntries; i++)
             {
                 reader.ReadValue(out int slotNameBytesLength);
@@ -641,9 +641,11 @@ namespace ReservedItemSlotCore.Networking
             if (playerController == localPlayerController)
             {
                 ShipBuildModeManager.Instance.CancelBuildMode(true);
-                playerController.playerBodyAnimator.SetBool("GrabValidated", value: false);
+                playerController.playerBodyAnimator.SetBool("GrabValidated", value: true);
             }
+
             PlayerPatcher.SwitchToItemSlot(playerController, hotbarIndex);
+
             if (playerController.currentlyHeldObjectServer != null)
                 playerController.currentlyHeldObjectServer.gameObject.GetComponent<AudioSource>().PlayOneShot(playerController.currentlyHeldObjectServer.itemProperties.grabSFX, 0.6f);
         }

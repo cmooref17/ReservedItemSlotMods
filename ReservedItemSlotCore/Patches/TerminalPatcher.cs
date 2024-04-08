@@ -53,6 +53,9 @@ namespace ReservedItemSlotCore.Patches
 
             initializedTerminalNodes = true;
 
+            if (!SyncManager.enablePurchasingItemSlots)
+                return;
+
             foreach (TerminalNode node in terminalInstance.terminalNodes.specialNodes)
             {
                 if (node.name == "Start" && !node.displayText.Contains("[ReservedItemSlots]"))
@@ -62,21 +65,15 @@ namespace ReservedItemSlotCore.Patches
                     if (insertIndex != -1)
                     {
                         insertIndex += keyword.Length;
-                        string addText = "\n\n[ReservedItemSlots]\n";
-                        if (SyncManager.enablePurchasingItemSlots) 
-                            addText += "Type \"Reserved\" to purchase reserved item slots.";
-                        else
-                        {
-                            addText += "<s>Type \"Reserved\" to purchase reserved item slots.</s>\n" +
-                                "[DISABLED BY HOST IN CONFIG]";
-                        }
+                        string addText = "\n\n[ReservedItemSlots]\n" +
+                            "Type \"Reserved\" to purchase reserved item slots.";
                         node.displayText = node.displayText.Insert(insertIndex, addText);
                     }
                     else
                         Debug.LogError("Failed to add reserved item slots tip to terminal. Maybe an update broke it?");
                 }
 
-                else if (SyncManager.enablePurchasingItemSlots && node.name == "HelpCommands" && !node.displayText.Contains(">RESERVED"))
+                else if (node.name == "HelpCommands" && !node.displayText.Contains(">RESERVED"))
                 {
                     string keyword = "[numberOfItemsOnRoute]";
                     int insertIndex = node.displayText.IndexOf(keyword);

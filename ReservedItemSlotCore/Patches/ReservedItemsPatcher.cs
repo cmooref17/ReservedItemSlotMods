@@ -36,7 +36,7 @@ namespace ReservedItemSlotCore.Patches
                 {
                     foreach (var renderer in __instance.GetComponentsInChildren<MeshRenderer>())
                     {
-                        if (!renderer.name.Contains("ScanNode") && !renderer.gameObject.CompareTag("DoNotSet") && !renderer.gameObject.CompareTag("InteractTrigger"))
+                        if (!renderer.gameObject.CompareTag("DoNotSet") && !renderer.gameObject.CompareTag("InteractTrigger") && renderer.gameObject.layer != 14 && renderer.gameObject.layer != 22)
                             renderer.gameObject.layer = playerData.isLocalPlayer ? 23 : 6;
                     }
                     __instance.parentObject = playerData.boneMap.GetBone(itemData.holsteredParentBone);
@@ -56,14 +56,17 @@ namespace ReservedItemSlotCore.Patches
             if (__instance.playerHeldBy == null)
                 return;
 
-            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData) && SessionManager.IsReservedItem(__instance))
+            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData) && SessionManager.TryGetUnlockedItemData(__instance, out var itemData))
             {
-                foreach (var renderer in __instance.GetComponentsInChildren<MeshRenderer>())
+                if (playerData.IsItemInReservedItemSlot(__instance) && itemData.showOnPlayerWhileHolstered)
                 {
-                    if (!renderer.name.Contains("ScanNode") && !renderer.gameObject.CompareTag("DoNotSet") && !renderer.gameObject.CompareTag("InteractTrigger"))
-                        renderer.gameObject.layer = 6;
+                    foreach (var renderer in __instance.GetComponentsInChildren<MeshRenderer>())
+                    {
+                        if (!renderer.gameObject.CompareTag("DoNotSet") && !renderer.gameObject.CompareTag("InteractTrigger") && renderer.gameObject.layer != 14 && renderer.gameObject.layer != 22)
+                            renderer.gameObject.layer = 6;
+                    }
+                    __instance.parentObject = playerData.isLocalPlayer ? __instance.playerHeldBy.localItemHolder : __instance.playerHeldBy.serverItemHolder;
                 }
-                __instance.parentObject = playerData.isLocalPlayer ? __instance.playerHeldBy.localItemHolder : __instance.playerHeldBy.serverItemHolder;
             }
         }
 
@@ -72,11 +75,11 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPostfix]
         public static void ResetReservedItemLayer(GrabbableObject __instance)
         {
-            if (SessionManager.IsReservedItem(__instance))
+            if (SessionManager.TryGetUnlockedItemData(__instance, out var itemData) && itemData.showOnPlayerWhileHolstered)
             {
                 foreach (var renderer in __instance.GetComponentsInChildren<MeshRenderer>())
                 {
-                    if (!renderer.name.Contains("ScanNode") && !renderer.gameObject.CompareTag("DoNotSet") && !renderer.gameObject.CompareTag("InteractTrigger"))
+                    if (!renderer.gameObject.CompareTag("DoNotSet") && !renderer.gameObject.CompareTag("InteractTrigger") && renderer.gameObject.layer != 14 && renderer.gameObject.layer != 22)
                         renderer.gameObject.layer = 6;
                 }
             }
@@ -85,7 +88,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(GrabbableObject), "LateUpdate")]
         [HarmonyPostfix]
-        public static void SetPositionOffset(GrabbableObject __instance)
+        public static void SetHolsteredPositionRotation(GrabbableObject __instance)
         {
             if (!ConfigSettings.showReservedItemsHolstered.Value)
                 return;
@@ -95,7 +98,7 @@ namespace ReservedItemSlotCore.Patches
 
             if (ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData) && SessionManager.TryGetUnlockedItemData(__instance, out var reservedItemData))
             {
-                if (playerData.IsItemInReservedItemSlot(__instance) && reservedItemData.showOnPlayerWhileHolstered && __instance != playerData.currentSelectedItem)
+                if (playerData.IsItemInReservedItemSlot(__instance) && reservedItemData.showOnPlayerWhileHolstered && __instance != playerData.currentlySelectedItem)
                 {
                     Transform parent = __instance.parentObject.transform;
                     __instance.transform.rotation = __instance.parentObject.transform.rotation * Quaternion.Euler(reservedItemData.holsteredRotationOffset);
@@ -114,7 +117,7 @@ namespace ReservedItemSlotCore.Patches
 
             if (__instance.playerHeldBy != null && !ignoreMeshOverride && ReservedPlayerData.allPlayerData.TryGetValue(__instance.playerHeldBy, out var playerData))
             {
-                if (SessionManager.TryGetUnlockedItemData(__instance, out var reservedItemData) && playerData.IsItemInReservedItemSlot(__instance) && reservedItemData.showOnPlayerWhileHolstered && playerData.currentSelectedItem != __instance && !PlayerPatcher.ReservedItemIsBeingGrabbed(__instance))
+                if (SessionManager.TryGetUnlockedItemData(__instance, out var reservedItemData) && playerData.IsItemInReservedItemSlot(__instance) && reservedItemData.showOnPlayerWhileHolstered && playerData.currentlySelectedItem != __instance && !PlayerPatcher.ReservedItemIsBeingGrabbed(__instance))
                     enable = true;
             }
             ignoreMeshOverride = false;

@@ -9,6 +9,7 @@ using UnityEngine.InputSystem;
 using ReservedItemSlotCore.Input;
 using ReservedItemSlotCore.Networking;
 using ReservedItemSlotCore.Data;
+using ReservedItemSlotCore.Config;
 
 
 namespace ReservedItemSlotCore.Patches
@@ -18,12 +19,14 @@ namespace ReservedItemSlotCore.Patches
     {
         public static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
 
+        private static bool scrollingItemSlots = false;
+
 
         [HarmonyPatch(typeof(PlayerControllerB), "NextItemSlot")]
         [HarmonyPrefix]
         public static void CorrectReservedScrollDirectionNextItemSlot(ref bool forward)
         {
-            if (Keybinds.scrollingReservedHotbar)
+            if (/*!ConfigSettings.allowScrollingBetweenHotbars.Value && */Keybinds.scrollingReservedHotbar)
                 forward = Keybinds.RawScrollAction.ReadValue<float>() > 0;
         }
 
@@ -32,7 +35,7 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPrefix]
         public static void CorrectReservedScrollDirectionServerRpc(ref bool forward)
         {
-            if (Keybinds.scrollingReservedHotbar)
+            if (/*!ConfigSettings.allowScrollingBetweenHotbars.Value && */Keybinds.scrollingReservedHotbar)
                 forward = Keybinds.RawScrollAction.ReadValue<float>() > 0;
         }
 
@@ -49,10 +52,18 @@ namespace ReservedItemSlotCore.Patches
                 if (!HUDPatcher.hasReservedItemSlotsAndEnabled)
                     return true;
                 //if (HUDPatcher.reservedItemSlots.Count > 0 && HUDPatcher.reservedItemSlots[1].rectTransform.anchoredPosition.y - HUDPatcher.reservedItemSlots[0].rectTransform.anchoredPosition.y <= 5) return true;
-                if (!Keybinds.scrollingReservedHotbar || (ReservedPlayerData.localPlayerData.GetNumHeldReservedItems() == 1 && ReservedPlayerData.localPlayerData.currentSelectedItem != null && !ReservedHotbarManager.isToggledInReservedSlots))
+                if (!Keybinds.scrollingReservedHotbar || (ReservedPlayerData.localPlayerData.GetNumHeldReservedItems() == 1 && ReservedPlayerData.localPlayerData.currentlySelectedItem != null && !ReservedHotbarManager.isToggledInReservedSlots))
                     return false;
             }
             return true;
+        }
+
+
+        [HarmonyPatch(typeof(PlayerControllerB), "ScrollMouse_performed")]
+        [HarmonyPostfix]
+        public static void ScrollReservedItemSlots(InputAction.CallbackContext context)
+        {
+            scrollingItemSlots = false;
         }
     }
 }

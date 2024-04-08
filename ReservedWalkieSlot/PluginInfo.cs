@@ -6,6 +6,6 @@ namespace ReservedWalkieSlot
 	{
 		public const string PLUGIN_GUID = "FlipMods.ReservedWalkieSlot";
 		public const string PLUGIN_NAME = "ReservedWalkieSlot";
-		public const string PLUGIN_VERSION = "2.0.2";
+		public const string PLUGIN_VERSION = "2.0.4";
 	}
 }

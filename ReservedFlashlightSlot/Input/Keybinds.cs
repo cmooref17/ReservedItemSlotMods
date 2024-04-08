@@ -9,6 +9,7 @@ using UnityEngine;
 using ReservedItemSlotCore.Patches;
 using ReservedFlashlightSlot.Patches;
 using ReservedFlashlightSlot.Config;
+using ReservedItemSlotCore.Data;
 
 namespace ReservedFlashlightSlot.Input
 {
@@ -70,12 +71,15 @@ namespace ReservedFlashlightSlot.Input
         {
             if (localPlayerController == null || !localPlayerController.isPlayerControlled || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
                 return;
+
             FlashlightItem mainFlashlight = FlashlightPatcher.GetMainFlashlight(localPlayerController);
             if (!context.performed || mainFlashlight == null || ShipBuildModeManager.Instance.InBuildMode || localPlayerController.inTerminalMenu)
                 return;
 
-            float timeSinceSwitchingSlots = (float)Traverse.Create(localPlayerController).Field("timeSinceSwitchingSlots").GetValue();
-            if (timeSinceSwitchingSlots < 0.075f)
+            if (ReservedPlayerData.localPlayerData.timeSinceSwitchingSlots < 0.075f)
+                return;
+
+            if (localPlayerController.isTypingChat || localPlayerController.inTerminalMenu || localPlayerController.quickMenuManager.isMenuOpen || localPlayerController.isPlayerDead || localPlayerController.isGrabbingObjectAnimation || ReservedPlayerData.localPlayerData.isGrabbingReservedItem)
                 return;
 
             mainFlashlight.UseItemOnClient(!mainFlashlight.isBeingUsed);

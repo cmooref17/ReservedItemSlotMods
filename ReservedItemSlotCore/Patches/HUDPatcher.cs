@@ -20,20 +20,25 @@ namespace ReservedItemSlotCore.Patches
     public static class HUDPatcher
     {
         public static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
+        public static ReservedPlayerData localPlayerData { get { return ReservedPlayerData.localPlayerData; } }
         public static bool localPlayerUsingController { get { return StartOfRound.Instance != null ? StartOfRound.Instance.localPlayerUsingController : false; } }
-        static bool usingController = false;
+        private static bool usingController = false;
 
-        static float itemSlotWidth;
-        static float itemSlotSpacing;
-        static float xPos;
-        static TextMeshProUGUI hotkeyTooltip;
+        private static float itemSlotWidth;
+        private static float itemSlotSpacing;
+        private static float xPos;
+        private static float defaultItemSlotSpacing;
+        private static Vector2 defaultItemSlotSize;
+        private static TextMeshProUGUI hotkeyTooltip;
 
         public static List<Image> reservedItemSlots = new List<Image>();
         public static bool hasReservedItemSlotsAndEnabled { get { return reservedItemSlots != null && reservedItemSlots.Count > 0 && reservedItemSlots[0].gameObject.activeSelf && reservedItemSlots[0].enabled; } }
 
         public static HashSet<ReservedItemSlotData> toggledReservedItemSlots = new HashSet<ReservedItemSlotData>();
-        static bool lerpToggledItemSlotFrames = false;
-        static float largestPositionDifference = 0;
+        private static bool lerpToggledItemSlotFrames = false;
+        private static float largestPositionDifference = 0;
+
+        private static bool currentApplyHotbarPlusFormatting;
 
 
         [HarmonyPatch(typeof(HUDManager), "Awake")]
@@ -45,6 +50,10 @@ namespace ReservedItemSlotCore.Patches
             itemSlotWidth = __instance.itemSlotIconFrames[0].GetComponent<RectTransform>().sizeDelta.x;
             itemSlotSpacing = ((9f / 8f) * itemSlotWidth);
             xPos = (canvasScaler.referenceResolution.x / 2) / aspectRatioFitter.aspectRatio - itemSlotWidth / 4;
+
+            defaultItemSlotSpacing = itemSlotSpacing;
+            defaultItemSlotSize = __instance.itemSlotIconFrames[0].rectTransform.sizeDelta;
+
             reservedItemSlots.Clear();
         }
 
@@ -62,7 +71,7 @@ namespace ReservedItemSlotCore.Patches
                 UpdateHotkeyTooltipText();
             }
 
-            //LerpItemSlotFrames();
+            LerpItemSlotFrames();
         }
 
 
@@ -138,34 +147,53 @@ namespace ReservedItemSlotCore.Patches
 
             int positiveIndex = 0;
             int negativeIndex = 0;
+            Transform tooltipParent = null;
 
             for (int i = 0; i < SessionManager.numReservedItemSlotsUnlocked; i++)
             {
                 var reservedItemSlot = SessionManager.GetUnlockedReservedItemSlot(i);
+                int indexInItemSlotHUD = Array.IndexOf(HUDManager.Instance.itemSlotIconFrames, reservedItemSlots[i]);
+
                 var itemSlotFrame = HUDManager.Instance.itemSlotIconFrames[ReservedPlayerData.localPlayerData.reservedHotbarStartIndex + i];
                 var itemSlotIcon = HUDManager.Instance.itemSlotIcons[ReservedPlayerData.localPlayerData.reservedHotbarStartIndex + i];
 
+                float itemSlotSpacing = GetCurrentItemSlotSpacing();
+                if (HotbarPlus_Compat.Enabled && !ConfigSettings.applyHotbarPlusFormatting.Value)
+                {
+                    itemSlotFrame.rectTransform.sizeDelta = defaultItemSlotSize;
+                    itemSlotSpacing = defaultItemSlotSpacing;
+                }
+
+                var reservedGrabbableObject = ReservedPlayerData.localPlayerData.GetReservedItem(reservedItemSlot);
 
                 itemSlotFrame.name = "Slot" + i + " [ReservedItemSlot] (" + reservedItemSlot.slotName + ")";
+                Vector2 hudPosition = new Vector2(xPos, HUDManager.Instance.itemSlotIconFrames[0].rectTransform.anchoredPosition.y);
 
-                Vector2 hudPosition = default;
                 if (reservedItemSlot.slotPriority >= 0 || !ConfigSettings.displayNegativePrioritySlotsLeftSideOfScreen.Value)
                 {
                     hudPosition.x = xPos;
                     hudPosition.y = HUDManager.Instance.itemSlotIconFrames[0].rectTransform.anchoredPosition.y + itemSlotSpacing * positiveIndex;
-                    positiveIndex++;
+                    if (!ConfigSettings.hideEmptyReservedItemSlots.Value || reservedGrabbableObject != null)
+                    {
+                        if (!tooltipParent)
+                            tooltipParent = itemSlotFrame.transform;
+                        positiveIndex++;
+                    }
+                    else
+                        hudPosition.y = -1000;
                 }
                 else
                 {
                     hudPosition.x = -xPos;
                     hudPosition.y = HUDManager.Instance.itemSlotIconFrames[0].rectTransform.anchoredPosition.y + itemSlotSpacing * negativeIndex;
-                    negativeIndex++;
+                    if (!ConfigSettings.hideEmptyReservedItemSlots.Value || reservedGrabbableObject != null)
+                        negativeIndex++;
+                    else
+                        hudPosition.y = -1000;
                 }
 
-                //itemSlotFrame.rectTransform.localPosition = Vector3.zero;
                 itemSlotFrame.rectTransform.anchoredPosition = hudPosition;
 
-                var reservedGrabbableObject = ReservedPlayerData.localPlayerData.GetReservedItem(reservedItemSlot);
                 if (reservedGrabbableObject != null)
                 {
                     itemSlotIcon.enabled = true;
@@ -179,22 +207,29 @@ namespace ReservedItemSlotCore.Patches
             }
 
 
-            if (SessionManager.numReservedItemSlotsUnlocked > 0)
+            if (SessionManager.numReservedItemSlotsUnlocked > 0 && !ConfigSettings.hideFocusHotbarTooltip.Value)
             {
                 if (hotkeyTooltip == null)
                     hotkeyTooltip = new GameObject("ReservedItemSlotTooltip", new Type[] { typeof(RectTransform), typeof(TextMeshProUGUI) }).GetComponent<TextMeshProUGUI>();
 
                 RectTransform tooltipTransform = hotkeyTooltip.rectTransform;
-                tooltipTransform.transform.parent = reservedItemSlots[0].transform;
-                tooltipTransform.localScale = Vector3.one;
-                tooltipTransform.sizeDelta = new Vector2(HUDManager.Instance.itemSlotIconFrames[0].rectTransform.sizeDelta.x * 2, 10);
-                tooltipTransform.pivot = Vector2.one / 2;
-                tooltipTransform.anchoredPosition3D = new Vector3(0, -(tooltipTransform.sizeDelta.x / 2) * 1.2f, 0);
-                hotkeyTooltip.font = HUDManager.Instance.controlTipLines[0].font;
-                hotkeyTooltip.fontSize = 7;
-                hotkeyTooltip.alignment = TextAlignmentOptions.Center;
-                UpdateHotkeyTooltipText();
+                tooltipTransform.parent = tooltipParent;
+                if (tooltipParent)
+                {
+                    tooltipTransform.localScale = Vector3.one;
+                    tooltipTransform.sizeDelta = new Vector2(HUDManager.Instance.itemSlotIconFrames[0].rectTransform.sizeDelta.x * 2, 10);
+                    tooltipTransform.pivot = Vector2.one / 2;
+                    tooltipTransform.anchoredPosition3D = new Vector3(0, -(tooltipTransform.sizeDelta.x / 2) * 1.2f, 0);
+                    hotkeyTooltip.font = HUDManager.Instance.controlTipLines[0].font;
+                    hotkeyTooltip.fontSize = 7;
+                    hotkeyTooltip.alignment = TextAlignmentOptions.Center;
+                    UpdateHotkeyTooltipText();
+                }
+                else
+                    tooltipTransform.localScale = Vector3.zero;
             }
+
+            currentApplyHotbarPlusFormatting = ConfigSettings.applyHotbarPlusFormatting.Value;
         }
 
 
@@ -202,6 +237,7 @@ namespace ReservedItemSlotCore.Patches
         {
             if (localPlayerController == null || hotkeyTooltip == null || Keybinds.FocusReservedHotbarAction == null || Plugin.IsModLoaded("com.potatoepet.AdvancedCompany"))
                 return;
+
             int bindingIndex = localPlayerUsingController ? 1 : 0;
             string displayName = KeybindDisplayNames.GetKeybindDisplayName(Keybinds.FocusReservedHotbarAction.bindings[bindingIndex].effectivePath);
             hotkeyTooltip.text = ConfigSettings.toggleFocusReservedHotbar.Value ? string.Format("Toggle: [{0}]", displayName) : string.Format("Hold: [{0}]", displayName);
@@ -217,6 +253,32 @@ namespace ReservedItemSlotCore.Patches
 
             lerpToggledItemSlotFrames = true;
             largestPositionDifference = -1;
+        }
+
+
+        private static float GetCurrentItemSlotSpacing()
+        {
+            try
+            {
+                Image frame0 = HUDManager.Instance.itemSlotIconFrames[0];
+                Image frame1 = HUDManager.Instance.itemSlotIconFrames[1];
+                if (frame0.name.ToLower().Contains("reserved") || frame1.name.ToLower().Contains("reserved"))
+                    return defaultItemSlotSpacing;
+
+                return Mathf.Abs(frame1.rectTransform.anchoredPosition.x - frame0.rectTransform.anchoredPosition.x);
+            }
+            catch { }
+
+            return defaultItemSlotSpacing;
+        }
+
+
+        [HarmonyPatch(typeof(QuickMenuManager), "CloseQuickMenu")]
+        [HarmonyPostfix]
+        public static void OnCloseQuickMenu()
+        {
+            if (HotbarPlus_Compat.Enabled && currentApplyHotbarPlusFormatting != ConfigSettings.applyHotbarPlusFormatting.Value)
+                UpdateUI();
         }
     }
 }

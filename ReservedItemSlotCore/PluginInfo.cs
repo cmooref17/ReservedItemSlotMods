@@ -6,6 +6,6 @@ namespace ReservedItemSlotCore
 	{
 		public const string PLUGIN_GUID = "FlipMods.ReservedItemSlotCore";
 		public const string PLUGIN_NAME = "ReservedItemSlotCore";
-		public const string PLUGIN_VERSION = "2.0.10";
+		public const string PLUGIN_VERSION = "2.0.17";
 	}
 }

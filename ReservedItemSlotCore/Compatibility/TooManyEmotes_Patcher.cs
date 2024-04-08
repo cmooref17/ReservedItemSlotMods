@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TooManyEmotes;
 using TooManyEmotes.Networking;
 
+
 namespace ReservedItemSlotCore.Compatibility
 {
     internal static class TooManyEmotes_Patcher

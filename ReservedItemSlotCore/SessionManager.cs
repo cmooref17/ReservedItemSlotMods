@@ -18,13 +18,22 @@ namespace ReservedItemSlotCore
     [HarmonyPatch]
     public static class SessionManager
     {
+        // All unlockable reserved item slots
+        internal static List<ReservedItemSlotData> allUnlockableReservedItemSlots { get { return SyncManager.unlockableReservedItemSlots; } }
+        internal static Dictionary<string, ReservedItemSlotData> allUnlockableReservedItemSlotsDict { get { return SyncManager.unlockableReservedItemSlotsDict; } }
+
+        // Currently unlocked reserved item slots
         internal static List<ReservedItemSlotData> unlockedReservedItemSlots = new List<ReservedItemSlotData>();
         internal static Dictionary<string, ReservedItemSlotData> unlockedReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
+
+        // Will be unlocked after finished syncing with server
         private static List<ReservedItemSlotData> pendingUnlockedReservedItemSlots = new List<ReservedItemSlotData>();
         private static Dictionary<string, ReservedItemSlotData> pendingUnlockedReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
 
+        /// <summary>All reserved item data in currentlyUnlockedSlots</summary>
         private static Dictionary<string, ReservedItemData> allReservedItemData = new Dictionary<string, ReservedItemData>();
 
+        /// <summary>Number of currently unlocked item slots.</summary>
         public static int numReservedItemSlotsUnlocked { get { return unlockedReservedItemSlots != null ? unlockedReservedItemSlots.Count : 0; } }
 
 
@@ -40,9 +49,13 @@ namespace ReservedItemSlotCore
         }
 
 
+        /// <summary>
+        /// Unlocks the specified reserved item slot for the local client.
+        /// </summary>
+        /// <param name="itemSlotData"></param>
         public static void UnlockReservedItemSlot(ReservedItemSlotData itemSlotData)
         {
-            Plugin.LogWarning("Unlocking reserved item slot: " + itemSlotData.slotName);
+            Plugin.Log("Unlocking reserved item slot: " + itemSlotData.slotName);
             if (!SyncManager.isSynced)
             {
                 if (!pendingUnlockedReservedItemSlotsDict.ContainsKey(itemSlotData.slotName))
@@ -87,6 +100,8 @@ namespace ReservedItemSlotCore
                     }
                 }
             }
+            if (ReservedHotbarManager.indexInReservedHotbar < ReservedPlayerData.localPlayerData.reservedHotbarStartIndex || ReservedHotbarManager.indexInReservedHotbar >= ReservedPlayerData.localPlayerData.reservedHotbarEndIndexExcluded)
+                ReservedHotbarManager.indexInReservedHotbar = ReservedPlayerData.localPlayerData.reservedHotbarStartIndex;
 
             UpdateReservedItemsList();
             HUDPatcher.OnUpdateReservedItemSlots();
@@ -103,12 +118,22 @@ namespace ReservedItemSlotCore
         }
 
 
-        public static ReservedItemSlotData GetUnlockedReservedItemSlot(int index)
+        /// <summary>
+        /// Returns the reserved item slot data for the specified index. The index passed is the index of the reserved item slot in the list of unlocked reserved item slots, and NOT the actual index in the player's inventory.
+        /// </summary>
+        /// <param name="indexInUnlockedItemSlots"></param>
+        /// <returns></returns>
+        public static ReservedItemSlotData GetUnlockedReservedItemSlot(int indexInUnlockedItemSlots)
         {
-            return unlockedReservedItemSlots != null && index >= 0 && index < unlockedReservedItemSlots.Count ? unlockedReservedItemSlots[index] : null;
+            return unlockedReservedItemSlots != null && indexInUnlockedItemSlots >= 0 && indexInUnlockedItemSlots < unlockedReservedItemSlots.Count ? unlockedReservedItemSlots[indexInUnlockedItemSlots] : null;
         }
 
 
+        /// <summary>
+        /// Returns the reserved item slot with the specified name, if it exists and is unlocked. Otherwise, returns null.
+        /// </summary>
+        /// <param name="itemSlotName"></param>
+        /// <returns></returns>
         public static ReservedItemSlotData GetUnlockedReservedItemSlot(string itemSlotName)
         {
             if (TryGetUnlockedItemSlotData(itemSlotName, out var itemSlotData))
@@ -117,11 +142,23 @@ namespace ReservedItemSlotCore
         }
 
 
-        public static bool IsItemSlotUnlocked(ReservedItemSlotData itemSlotData) => itemSlotData != null ? unlockedReservedItemSlotsDict.ContainsKey(itemSlotData.slotName) : false;
+        /// <summary>
+        /// Returns true if the reserved item slot exists in the session, and is unlocked.
+        /// </summary>
+        /// <param name="itemSlotData"></param>
+        /// <returns></returns>
+        public static bool IsItemSlotUnlocked(ReservedItemSlotData itemSlotData) => itemSlotData != null ? IsItemSlotUnlocked(itemSlotData.slotName) : false;
+
+
+        /// <summary>
+        /// Returns true if the reserved item slot exists in the session, and is unlocked.
+        /// </summary>
+        /// <param name="itemSlotName"></param>
+        /// <returns></returns>
         public static bool IsItemSlotUnlocked(string itemSlotName) => unlockedReservedItemSlotsDict.ContainsKey(itemSlotName); // || pendingUnlockedReservedItemSlotsDict.ContainsKey(itemSlotName);
 
 
-        public static void UpdateReservedItemsList()
+        internal static void UpdateReservedItemsList()
         {
             if (unlockedReservedItemSlots == null)
                 return;
@@ -146,8 +183,6 @@ namespace ReservedItemSlotCore
         [HarmonyPostfix]
         private static void OnResetShip()
         {
-            //preGame = true;
-            //HUDPatcher.preGameReminderText.enabled = true;
             if (SyncManager.enablePurchasingItemSlots)
                 ResetProgress();
         }
@@ -215,6 +250,12 @@ namespace ReservedItemSlotCore
             HUDManager.Instance.itemSlotIconFrames = newItemSlotFrames.ToArray();
             HUDManager.Instance.itemSlotIcons = newItemSlotIcons.ToArray();
 
+            foreach (var reservedItemSlot in allUnlockableReservedItemSlots)
+            {
+                if (reservedItemSlot.purchasePrice <= 0)
+                    UnlockReservedItemSlot(reservedItemSlot);
+            }
+
             HUDPatcher.OnUpdateReservedItemSlots();
 
             ES3.DeleteKey("ReservedItemSlots.UnlockedItemSlots", GameNetworkManager.Instance.currentSaveFileName);
@@ -258,36 +299,47 @@ namespace ReservedItemSlotCore
         }
 
 
+        /// <summary>
+        /// Returns true if the passed grabbable object is a reserved item, and has a reserved item slot parent that is unlocked.
+        /// </summary>
+        /// <param name="grabbableObject"></param>
+        /// <returns></returns>
         public static bool IsReservedItem(GrabbableObject grabbableObject) { string originalItemName = ItemNameMap.GetItemName(grabbableObject); return IsReservedItem(originalItemName) || (grabbableObject?.itemProperties != null && IsReservedItem(grabbableObject.itemProperties.itemName)); } // return grabbableObject?.itemProperties != null ? IsReservedItem(grabbableObject.itemProperties.itemName) : false; }
-        public static bool IsReservedItem(Item item) => item != null ? IsReservedItem(item.itemName) : false;
-        private static bool IsReservedItem(string itemName) { return allReservedItemData.ContainsKey(itemName); }
+        //public static bool IsReservedItem(Item item) => item != null ? IsReservedItem(item.itemName) : false;
 
 
+        /// <summary>
+        /// Returns true if there exists a reserved item with the specified name, and has a reserved item slot parent that is unlocked.
+        /// </summary>
+        /// <param name="itemName"></param>
+        /// <returns></returns>
+        public static bool IsReservedItem(string itemName) { return allReservedItemData.ContainsKey(itemName); }
+
+
+        /// <summary>
+        /// Attempts to get the reserved item slot with the specified item slot name. If found, returns true and sets the out parameter to the reserved item slot data. Otherwise, returns false.
+        /// </summary>
+        /// <param name="itemSlotName"></param>
+        /// <param name="itemSlotData"></param>
+        /// <returns></returns>
         public static bool TryGetUnlockedItemSlotData(string itemSlotName, out ReservedItemSlotData itemSlotData) { itemSlotData = null; unlockedReservedItemSlotsDict.TryGetValue(itemSlotName, out itemSlotData); return itemSlotData != null; }
 
-        //public static bool TryGetUnlockedReservedItemData(string itemName, out ReservedItemData itemData) { itemData = null; if (allReservedItemData.TryGetValue(itemName, out var thisItemData) && thisItemData.HasUnlockedParentSlot()) thisItemData = thisItemData; return thisItemData != null; }
-        //public static bool TryGetUnlockedReservedItemData(GrabbableObject item, out ReservedItemData itemData) { itemData = null; return item?.itemProperties != null && TryGetUnlockedReservedItemData(item.itemProperties.itemName, out itemData); }
 
-
+        /// <summary>
+        /// Attempts to get a reserved item data for the passed grabbable object, if a reserved item data exists, and as a parent reserved item slot that is unlocked.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="itemData"></param>
+        /// <returns></returns>
         public static bool TryGetUnlockedItemData(GrabbableObject item, out ReservedItemData itemData) { itemData = null; string originalItemName = ItemNameMap.GetItemName(item); return TryGetUnlockedItemData(originalItemName, out itemData) || (item?.itemProperties != null && TryGetUnlockedItemData(item.itemProperties.itemName, out itemData)); }
+
+
+        /// <summary>
+        /// Attempts to get a reserved item data by name, if a reserved item data exists, and as a parent reserved item slot that is unlocked.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="itemData"></param>
+        /// <returns></returns>
         public static bool TryGetUnlockedItemData(string itemName, out ReservedItemData itemData) { itemData = null; return allReservedItemData.TryGetValue(itemName, out itemData); }
-
-
-        /*
-        public static bool HasReservedItemSlotForItem(GrabbableObject grabbableObject) => grabbableObject?.itemProperties != null ? HasReservedItemSlotForItem(grabbableObject.itemProperties.itemName) : false;
-        public static bool HasReservedItemSlotForItem(Item item) => item != null ? HasReservedItemSlotForItem(item.itemName) : false;
-        public static bool HasReservedItemSlotForItem(string itemName)
-        {
-            if (unlockedReservedItemSlots == null)
-                return false;
-
-            foreach (var reservedItemSlot in unlockedReservedItemSlots)
-            {
-                if (reservedItemSlot.ContainsItem(itemName))
-                    return true;
-            }
-            return false;
-        }
-        */
     }
 }

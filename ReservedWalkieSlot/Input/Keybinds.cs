@@ -9,6 +9,7 @@ using UnityEngine.InputSystem;
 using ReservedItemSlotCore.Patches;
 using ReservedWalkieSlot.Patches;
 using ReservedWalkieSlot.Config;
+using ReservedItemSlotCore.Data;
 
 
 namespace ReservedWalkieSlot.Input
@@ -78,11 +79,13 @@ namespace ReservedWalkieSlot.Input
             if (!context.performed || mainWalkie == null || !mainWalkie.isBeingUsed || ShipBuildModeManager.Instance.InBuildMode)
                 return;
 
+            if (localPlayerController.isTypingChat || localPlayerController.quickMenuManager.isMenuOpen || localPlayerController.isPlayerDead || localPlayerController.isGrabbingObjectAnimation || ReservedPlayerData.localPlayerData.isGrabbingReservedItem)
+                return;
+
             float timeSinceSwitchingSlots = (float)Traverse.Create(localPlayerController).Field("timeSinceSwitchingSlots").GetValue();
             if (timeSinceSwitchingSlots < 0.075f)
                 return;
 
-            Plugin.Log("Speaking into walkie");
             mainWalkie.UseItemOnClient(true);
             Traverse.Create(localPlayerController).Field("timeSinceSwitchingSlots").SetValue(0);
         }
@@ -92,11 +95,11 @@ namespace ReservedWalkieSlot.Input
         {
             if (localPlayerController == null || !localPlayerController.isPlayerControlled || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
                 return;
+
             WalkieTalkie mainWalkie = WalkiePatcher.GetMainWalkie(localPlayerController);
             if (!context.canceled || mainWalkie == null)
                 return;
 
-            Plugin.Log("Not talking into walkie");
             mainWalkie.UseItemOnClient(false);
         }
     }

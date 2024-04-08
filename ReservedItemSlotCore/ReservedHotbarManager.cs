@@ -23,13 +23,13 @@ namespace ReservedItemSlotCore
         public static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
         public static ReservedPlayerData localPlayerData { get { return ReservedPlayerData.localPlayerData; } }
 
-        static int vanillaHotbarSize = -1;
-
         public static int reservedHotbarSize { get { return SessionManager.numReservedItemSlotsUnlocked; } }
-        public static int indexInHotbar = 0;
-        public static int indexInReservedHotbar = 0;
+        public static int indexInHotbar = 0; // Used to determine which item slot to swap to when swapping from the reserved hotbar, to the main hotbar.
+        public static int indexInReservedHotbar = 0; // Used to determine which item slot to swap to when swapping from the main hotbar, to the reserved hotbar.
 
         public static bool isToggledInReservedSlots { get { var currentlySelectedReservedItemSlot = localPlayerData.GetCurrentlySelectedReservedItemSlot(); return ConfigSettings.toggleFocusReservedHotbar.Value || (currentlyToggledItemSlots != null && currentlySelectedReservedItemSlot != null && currentlyToggledItemSlots.Contains(currentlySelectedReservedItemSlot)); } }
+
+        // Internal list to help track which item slots are currently toggled. These are for cases where a specific item slot is toggled, such as when pressing a hotkey to swap to the reserved weapon slot.
         internal static List<ReservedItemSlotData> currentlyToggledItemSlots = new List<ReservedItemSlotData>();
 
 
@@ -39,7 +39,6 @@ namespace ReservedItemSlotCore
         {
             currentlyToggledItemSlots = new List<ReservedItemSlotData>();
             ReservedPlayerData.allPlayerData.Clear();
-            vanillaHotbarSize = -1;
             indexInHotbar = 0;
             indexInReservedHotbar = -1;
         }
@@ -53,10 +52,9 @@ namespace ReservedItemSlotCore
         {
             if (!localPlayerController.IsOwner || !localPlayerController.isPlayerControlled || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
                 return;
+
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled || reservedHotbarSize <= 0 || !CanSwapHotbars() || reservedItemSlots == null || reservedItemSlots.Length <= 0 || localPlayerController == null)
                 return;
-
-            //if (!ConfigSettings.toggleFocusReservedHotbar.Value)
 
             currentlyToggledItemSlots = new List<ReservedItemSlotData>(reservedItemSlots);
             var firstSlot = currentlyToggledItemSlots.First().GetReservedItemSlotIndex() + localPlayerData.reservedHotbarStartIndex;
@@ -140,6 +138,10 @@ namespace ReservedItemSlotCore
         }
 
 
+        /// <summary>
+        /// Returns true if this mod determines if the local player should be allowed to swap between hotbar slots.
+        /// </summary>
+        /// <returns></returns>
         public static bool CanSwapHotbars()
         {
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled)
@@ -148,10 +150,14 @@ namespace ReservedItemSlotCore
             if (TooManyEmotes_Patcher.Enabled && TooManyEmotes_Patcher.IsLocalPlayerPerformingCustomEmote() && !TooManyEmotes_Patcher.CanMoveWhileEmoting())
                 return false;
 
+            //if (!ReservedPlayerData.localPlayerData.currentItemSlotIsReserved && ReservedPlayerData.localPlayerData.GetNumHeldReservedItems() <= 0)
+                //return false;
+
             return !(ReservedPlayerData.localPlayerData.grabbingReservedItemData != null || localPlayerController.isGrabbingObjectAnimation || localPlayerController.quickMenuManager.isMenuOpen || localPlayerController.inSpecialInteractAnimation || localPlayerData.throwingObject || localPlayerController.isTypingChat || localPlayerController.twoHanded || localPlayerController.activatingItem || localPlayerController.jetpackControls || localPlayerController.disablingJetpackControls || localPlayerController.inTerminalMenu || localPlayerController.isPlayerDead || localPlayerData.timeSinceSwitchingSlots < 0.3f);
         }
 
 
+        /*
         internal static bool CanGrabReservedItem()
         {
             if (TooManyEmotes_Patcher.Enabled && TooManyEmotes_Patcher.IsLocalPlayerPerformingCustomEmote() && !TooManyEmotes_Patcher.CanMoveWhileEmoting())
@@ -162,6 +168,7 @@ namespace ReservedItemSlotCore
 
             return true;
         }
+        */
 
 
         internal static void OnSwapToReservedHotbar()
@@ -169,9 +176,22 @@ namespace ReservedItemSlotCore
             if (!localPlayerData.currentItemSlotIsReserved)
                 return;
 
+            if (localPlayerData.currentItemSlotIsReserved)
+                indexInReservedHotbar = localPlayerController.currentItemSlot;
+
             var currentlySelectedReservedItemSlot = localPlayerData.GetCurrentlySelectedReservedItemSlot();
             if (isToggledInReservedSlots && currentlyToggledItemSlots != null && !currentlyToggledItemSlots.Contains(currentlySelectedReservedItemSlot))
                 currentlyToggledItemSlots = null;
+
+            if (HUDPatcher.reservedItemSlots != null)
+            {
+                foreach (var itemSlotFrame in HUDPatcher.reservedItemSlots)
+                {
+                    var canvasGroup = itemSlotFrame.GetComponent<CanvasGroup>();
+                    if (canvasGroup != null)
+                        canvasGroup.ignoreParentGroups = true;
+                }
+            }
         }
 
 
@@ -180,7 +200,20 @@ namespace ReservedItemSlotCore
             if (localPlayerData.currentItemSlotIsReserved)
                 return;
 
+            if (!localPlayerData.currentItemSlotIsReserved)
+                indexInHotbar = localPlayerController.currentItemSlot;
+
             currentlyToggledItemSlots = null;
+
+            if (HUDPatcher.reservedItemSlots != null)
+            {
+                foreach (var itemSlotFrame in HUDPatcher.reservedItemSlots)
+                {
+                    var canvasGroup = itemSlotFrame.GetComponent<CanvasGroup>();
+                    if (canvasGroup != null)
+                        canvasGroup.ignoreParentGroups = ConfigSettings.preventReservedItemSlotFade.Value;
+                }
+            }
         }
 
 

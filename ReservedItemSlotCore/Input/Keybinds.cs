@@ -24,6 +24,7 @@ namespace ReservedItemSlotCore.Input
 
 		public static InputAction FocusReservedHotbarAction;
 		public static InputAction RawScrollAction;
+
 		public static bool holdingModifierKey = false;
 		public static bool scrollingReservedHotbar = false;
 
@@ -43,9 +44,10 @@ namespace ReservedItemSlotCore.Input
                 ActionMap = new InputActionMap("ReservedItemSlots");
                 Asset.AddActionMap(ActionMap);
 
-                FocusReservedHotbarAction = ActionMap.AddAction("ReservedItemSlots.FocusReservedHotbar", binding: ConfigSettings.focusReservedHotbarHotkey.Value);
+                FocusReservedHotbarAction = ActionMap.AddAction("ReservedItemSlots.FocusReservedHotbar", binding: "<Keyboard>/leftAlt");
                 FocusReservedHotbarAction.AddBinding("<Gamepad>/leftShoulder");
             }
+
             RawScrollAction = new InputAction("ReservedItemSlots.RawScroll", binding: "<Mouse>/scroll/y");
         }
 
@@ -86,9 +88,16 @@ namespace ReservedItemSlotCore.Input
 				return;
 			if (SessionManager.numReservedItemSlotsUnlocked <= 0 || !HUDPatcher.hasReservedItemSlotsAndEnabled)
 				return;
+			if (ReservedPlayerData.localPlayerData.GetNumHeldReservedItems() <= 0 && ConfigSettings.hideEmptyReservedItemSlots.Value)
+			{
+				if (ReservedPlayerData.localPlayerData.currentItemSlotIsReserved)
+                    ReservedHotbarManager.FocusReservedHotbarSlots(false);
+				return;
+			}
 
             if (!ConfigSettings.toggleFocusReservedHotbar.Value)
 				holdingModifierKey = true;
+
             if (!context.performed || !ReservedHotbarManager.CanSwapHotbars())
                 return;
 

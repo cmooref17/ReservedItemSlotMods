@@ -15,7 +15,7 @@ using ReservedWeaponSlot.Config;
 
 namespace ReservedWeaponSlot
 {
-    [BepInPlugin("FlipMods.ReservedWeaponSlot", "ReservedWeaponSlot", "1.1.2")]
+    [BepInPlugin("FlipMods.ReservedWeaponSlot", "ReservedWeaponSlot", "1.1.3")]
     [BepInDependency("FlipMods.ReservedItemSlotCore", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
@@ -152,7 +152,7 @@ namespace ReservedWeaponSlot
             string[] removeItemNames = ConfigSettings.ParseRemoveMeleeWeaponItems();
             foreach (string itemName in removeItemNames)
             {
-                if (!weaponSlotData.ContainsItem(itemName))
+                if (weaponSlotData.ContainsItem(itemName))
                 {
                     LogWarning("Removing item from reserved (melee weapons) item slot. Item: " + itemName);
                     weaponSlotData.RemoveItemFromReservedItemSlot(itemName);
@@ -162,7 +162,7 @@ namespace ReservedWeaponSlot
             removeItemNames = ConfigSettings.ParseRemoveRangedWeaponItems();
             foreach (string itemName in removeItemNames)
             {
-                if (!rangedWeaponSlotData.ContainsItem(itemName))
+                if (rangedWeaponSlotData.ContainsItem(itemName))
                 {
                     LogWarning("Removing item from reserved (ranged weapons) item slot. Item: " + itemName);
                     rangedWeaponSlotData.RemoveItemFromReservedItemSlot(itemName);
@@ -174,7 +174,7 @@ namespace ReservedWeaponSlot
                 removeItemNames = ConfigSettings.ParseRemoveAmmoItems();
                 foreach (string itemName in removeItemNames)
                 {
-                    if (!ammoSlotData.ContainsItem(itemName))
+                    if (ammoSlotData.ContainsItem(itemName))
                     {
                         LogWarning("Removing item from reserved (ammo) item slot. Item: " + itemName);
                         ammoSlotData.RemoveItemFromReservedItemSlot(itemName);

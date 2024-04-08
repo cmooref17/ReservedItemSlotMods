@@ -14,21 +14,23 @@ using ReservedItemSlotCore.Input;
 using ReservedItemSlotCore.Compatibility;
 using ReservedItemSlotCore.Data;
 using System.Data.SqlTypes;
+using System.Linq;
+using UnityEngine.PlayerLoop;
 
 namespace ReservedItemSlotCore.Patches
 {
     [HarmonyPatch]
-    public static class PlayerPatcher
+    internal static class PlayerPatcher
     {
         public static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
-        static Dictionary<PlayerControllerB, ReservedPlayerData> allPlayerData { get { return ReservedPlayerData.allPlayerData; } }
-        static ReservedPlayerData localPlayerData { get { return ReservedPlayerData.localPlayerData; }  }
+        public static Dictionary<PlayerControllerB, ReservedPlayerData> allPlayerData { get { return ReservedPlayerData.allPlayerData; } }
+        public static ReservedPlayerData localPlayerData { get { return ReservedPlayerData.localPlayerData; }  }
 
-        public static int INTERACTABLE_OBJECT_MASK { get; private set; }
+        private static int INTERACTABLE_OBJECT_MASK = 0;
         public static int vanillaHotbarSize = 4;
         public static int reservedHotbarSize { get { return SessionManager.numReservedItemSlotsUnlocked; } }
 
-        static bool initialized = false;
+        private static bool initialized = false;
 
 
         [HarmonyPatch(typeof(StartOfRound), "Awake")]
@@ -36,6 +38,8 @@ namespace ReservedItemSlotCore.Patches
         public static void InitSession(StartOfRound __instance)
         {
             initialized = false;
+            vanillaHotbarSize = 4;
+            ReservedPlayerData.allPlayerData?.Clear();
         }
 
 
@@ -53,12 +57,15 @@ namespace ReservedItemSlotCore.Patches
 
         
         [HarmonyPatch(typeof(PlayerControllerB), "Start")]
-        [HarmonyPostfix]
+        [HarmonyPrefix]
         public static void InitializePlayerControllerLate(PlayerControllerB __instance)
         {
             var playerData = new ReservedPlayerData(__instance);
             if (!allPlayerData.ContainsKey(__instance))
+            {
+                Plugin.Log("Initializing ReservedPlayerData for player: " + __instance.name);
                 allPlayerData.Add(__instance, playerData);
+            }
         }
         
 
@@ -66,11 +73,12 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPostfix]
         public static void CheckForChangedInventorySize(PlayerControllerB __instance)
         {
-            //if (SessionManager.preGame) return;
             if (!SyncManager.isSynced)
                 return;
 
-            var playerData = allPlayerData[__instance];
+            if (!ReservedPlayerData.allPlayerData.TryGetValue(__instance, out var playerData))
+                return;
+
             if (!SyncManager.canUseModDisabledOnHost || __instance != localPlayerController || reservedHotbarSize <= 0 || playerData.hotbarSize == __instance.ItemSlots.Length)
                 return;
 
@@ -128,9 +136,12 @@ namespace ReservedItemSlotCore.Patches
         }
 
 
+
+
+
         [HarmonyPatch(typeof(PlayerControllerB), "BeginGrabObject")]
         [HarmonyPrefix]
-        public static bool GrabReservedItemPrefix(PlayerControllerB __instance)
+        public static bool BeginGrabReservedItemPrefix(PlayerControllerB __instance)
         {
             if ((!SyncManager.isSynced && !SyncManager.canUseModDisabledOnHost) || !HUDPatcher.hasReservedItemSlotsAndEnabled)
                 return true;
@@ -140,27 +151,29 @@ namespace ReservedItemSlotCore.Patches
             ReservedPlayerData.localPlayerData.grabbingReservedItem = null;
             ReservedPlayerData.localPlayerData.previousHotbarIndex = -1;
 
-            if (ReservedPlayerData.localPlayerData.currentItemSlotIsReserved && !ConfigSettings.toggleFocusReservedHotbar.Value)
-                return false;
+            //if (ReservedPlayerData.localPlayerData.currentItemSlotIsReserved && !ConfigSettings.toggleFocusReservedHotbar.Value) return false;
 
             if (__instance.twoHanded || __instance.sinkingValue > 0.73f)
                 return true;
 
             var interactRay = new Ray(__instance.gameplayCamera.transform.position, __instance.gameplayCamera.transform.forward);
-            if (Physics.Raycast(interactRay, out var hit, __instance.grabDistance, INTERACTABLE_OBJECT_MASK) && hit.collider.gameObject.layer != 8 && hit.collider.tag == "PhysicsProp")
+            if (Physics.Raycast(interactRay, out var hit, __instance.grabDistance, INTERACTABLE_OBJECT_MASK))
             {
-                var currentlyGrabbingObject = hit.collider.transform.gameObject.GetComponent<GrabbableObject>();
-                if (currentlyGrabbingObject != null && !__instance.inSpecialInteractAnimation && !currentlyGrabbingObject.isHeld && !currentlyGrabbingObject.isPocketed)
+                if (hit.collider.gameObject.layer != 8 && hit.collider.tag == "PhysicsProp")
                 {
-                    NetworkObject networkObject = currentlyGrabbingObject.NetworkObject;
-                    if (networkObject != null && networkObject.IsSpawned)
+                    var currentlyGrabbingObject = hit.collider.transform.gameObject.GetComponent<GrabbableObject>();
+                    if (currentlyGrabbingObject != null && !__instance.inSpecialInteractAnimation && !currentlyGrabbingObject.isHeld && !currentlyGrabbingObject.isPocketed)
                     {
-                        if (SessionManager.TryGetUnlockedItemData(currentlyGrabbingObject, out var grabbingItemData))
+                        NetworkObject networkObject = currentlyGrabbingObject.NetworkObject;
+                        if (networkObject != null && networkObject.IsSpawned)
                         {
-                            Plugin.Log("Beginning grab on reserved item: " + grabbingItemData.itemName);
-                            ReservedPlayerData.localPlayerData.grabbingReservedItemData = grabbingItemData;
-                            ReservedPlayerData.localPlayerData.grabbingReservedItem = currentlyGrabbingObject;
-                            ReservedPlayerData.localPlayerData.previousHotbarIndex = __instance.currentItemSlot;
+                            if (SessionManager.TryGetUnlockedItemData(currentlyGrabbingObject, out var grabbingItemData))
+                            {
+                                Plugin.Log("Beginning grab on reserved item: " + grabbingItemData.itemName);
+                                ReservedPlayerData.localPlayerData.grabbingReservedItemData = grabbingItemData;
+                                ReservedPlayerData.localPlayerData.grabbingReservedItem = currentlyGrabbingObject;
+                                ReservedPlayerData.localPlayerData.previousHotbarIndex = __instance.currentItemSlot;
+                            }
                         }
                     }
                 }
@@ -172,11 +185,23 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), "BeginGrabObject")]
         [HarmonyPostfix]
-        public static void GrabReservedItemPostfix(PlayerControllerB __instance)
+        public static void BeginGrabReservedItemPostfix(PlayerControllerB __instance)
         {
-            //if (grabbingReservedItemInfoLocal != null)
-            if (ReservedPlayerData.localPlayerData.grabbingReservedItemData != null)
-                SetSpecialGrabAnimationBool(__instance, false, null);
+            // Fix some animations (or prevent swapping item animations)
+            if (localPlayerData != null && localPlayerData.isGrabbingReservedItem && !localPlayerData.IsReservedItemSlot(localPlayerData.previousHotbarIndex))
+            {
+                SetSpecialGrabAnimationBool(__instance, false);
+                SetSpecialGrabAnimationBool(__instance, localPlayerData.previouslyHeldItem != null, localPlayerData.previouslyHeldItem);
+                __instance.playerBodyAnimator.SetBool("GrabValidated", value: true);
+                __instance.playerBodyAnimator.SetBool("GrabInvalidated", value: false);
+                __instance.playerBodyAnimator.ResetTrigger("SwitchHoldAnimation");
+                __instance.playerBodyAnimator.ResetTrigger("SwitchHoldAnimationTwoHanded");
+                if (localPlayerData.previouslyHeldItem != null)
+                    __instance.playerBodyAnimator.ResetTrigger(localPlayerData.previouslyHeldItem.itemProperties.pocketAnim);
+                __instance.isGrabbingObjectAnimation = false;
+                __instance.twoHanded = localPlayerData.previouslyHeldItem != null ? localPlayerData.previouslyHeldItem.itemProperties.twoHanded : false;
+                __instance.twoHandedAnimation = localPlayerData.previouslyHeldItem != null ? localPlayerData.previouslyHeldItem.itemProperties.twoHandedAnimation : false;
+            }
         }
 
 
@@ -192,11 +217,11 @@ namespace ReservedItemSlotCore.Patches
 
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
-                if (grabValidated && grabbedObject.TryGet(out NetworkObject networkObject))
+                if (grabValidated && grabbedObject.TryGet(out NetworkObject networkObject) && networkObject.TryGetComponent(out GrabbableObject grabbingObject))
                 {
-                    GrabbableObject grabbingObject = networkObject.GetComponent<GrabbableObject>();
                     if (SessionManager.TryGetUnlockedItemData(grabbingObject, out var grabbingItemData))
                     {
+                        // WE ARE GRABBING RESERVED ITEM
                         var grabbingReservedItemSlotData = playerData.GetFirstEmptySlotForReservedItem(grabbingItemData.itemName);
                         if (grabbingReservedItemSlotData != null)
                         {
@@ -223,46 +248,59 @@ namespace ReservedItemSlotCore.Patches
             if ((!SyncManager.isSynced && !SyncManager.canUseModDisabledOnHost) || !NetworkHelper.IsClientExecStage(__instance))
                 return;
 
-            var playerData = ReservedPlayerData.allPlayerData[__instance];
-            if (playerData.grabbingReservedItemData == null)
+            if (!ReservedPlayerData.allPlayerData.TryGetValue(__instance, out var playerData) || !playerData.isGrabbingReservedItem)
                 return;
 
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
-                if (grabValidated && grabbedObject.TryGet(out NetworkObject networkObject))
+                if (grabValidated && grabbedObject.TryGet(out NetworkObject networkObject) && networkObject.TryGetComponent(out GrabbableObject grabbingObject))
                 {
-                    GrabbableObject grabbingObject = networkObject.GetComponent<GrabbableObject>();
                     if (SessionManager.TryGetUnlockedItemData(grabbingObject, out var grabbingItemData))
                     {
-                        SetSpecialGrabAnimationBool(__instance, playerData.previouslyHeldItem != null, playerData.previouslyHeldItem);
-                        __instance.playerBodyAnimator.Play(__instance.playerBodyAnimator.GetCurrentAnimatorStateInfo(2).shortNameHash, 2, 1);
-
-                        if (playerData.previouslyHeldItem != null)
-                            playerData.previouslyHeldItem.EnableItemMeshes(true);
-
-                        ReservedItemsPatcher.ForceEnableItemMesh(playerData.grabbingReservedItem, false); // Force disable
-
-                        Traverse.Create(grabbingObject).Field("previousPlayerHeldBy").SetValue(__instance);
-                        if (__instance != localPlayerController)
+                        if (!playerData.IsReservedItemSlot(playerData.previousHotbarIndex))
                         {
-                            SwitchToItemSlot(__instance, playerData.previousHotbarIndex, null);
-                            __instance.playerBodyAnimator.Play(__instance.playerBodyAnimator.GetCurrentAnimatorStateInfo(2).shortNameHash, 2, 1);
+                            // Swap back to previous item slot
+                            if (playerData.previouslyHeldItem != null)
+                                playerData.previouslyHeldItem.EnableItemMeshes(true);
+                            ReservedItemsPatcher.ForceEnableItemMesh(playerData.grabbingReservedItem, false); // Force disable
 
+                            Traverse.Create(grabbingObject).Field("previousPlayerHeldBy").SetValue(__instance);
+
+                            if (__instance == localPlayerController)
+                            {
+                                int hotbarIndex = playerData.reservedHotbarStartIndex + playerData.grabbingReservedItemSlotData.GetReservedItemSlotIndex();
+                                HUDManager.Instance.itemSlotIconFrames[hotbarIndex].GetComponent<Animator>().SetBool("selectedSlot", false);
+                                HUDManager.Instance.itemSlotIconFrames[playerData.previousHotbarIndex].GetComponent<Animator>().SetBool("selectedSlot", true);
+                                HUDManager.Instance.itemSlotIconFrames[hotbarIndex].GetComponent<Animator>().Play("PanelLines", 0, 1);
+                                HUDManager.Instance.itemSlotIconFrames[playerData.previousHotbarIndex].GetComponent<Animator>().Play("PanelEnlarge", 0, 1);
+                            }
+                            else
+                            {
+                                SwitchToItemSlot(__instance, playerData.previousHotbarIndex, null);
+                                if (grabbingItemData.showOnPlayerWhileHolstered)
+                                    grabbingObject.EnableItemMeshes(true);
+                            }
+
+                            SetSpecialGrabAnimationBool(__instance, false);
+                            SetSpecialGrabAnimationBool(__instance, playerData.previouslyHeldItem != null, playerData.previouslyHeldItem);
+                            __instance.playerBodyAnimator.SetBool("GrabValidated", value: true);
+                            __instance.playerBodyAnimator.SetBool("GrabInvalidated", value: false);
+                            __instance.playerBodyAnimator.ResetTrigger("SwitchHoldAnimation");
+                            __instance.playerBodyAnimator.ResetTrigger("SwitchHoldAnimationTwoHanded");
+                            if (playerData.previouslyHeldItem != null)
+                                __instance.playerBodyAnimator.ResetTrigger(playerData.previouslyHeldItem.itemProperties.pocketAnim);
+                            __instance.twoHanded = playerData.previouslyHeldItem != null ? playerData.previouslyHeldItem.itemProperties.twoHanded : false;
+                            __instance.twoHandedAnimation = playerData.previouslyHeldItem != null ? playerData.previouslyHeldItem.itemProperties.twoHandedAnimation : false;
+                        }
+
+                        if (__instance == localPlayerController)
+                            HUDPatcher.UpdateUI();
+                        else
+                        {
                             playerData.grabbingReservedItemSlotData = null;
                             playerData.grabbingReservedItemData = null;
                             playerData.grabbingReservedItem = null;
                             playerData.previousHotbarIndex = -1;
-
-                            if (grabbingItemData.showOnPlayerWhileHolstered)
-                                grabbingObject.EnableItemMeshes(true);
-                        }
-                        else
-                        {
-                            int hotbarIndex = playerData.reservedHotbarStartIndex + playerData.grabbingReservedItemSlotData.GetReservedItemSlotIndex();
-                            HUDManager.Instance.itemSlotIconFrames[hotbarIndex].GetComponent<Animator>().SetBool("selectedSlot", false);
-                            HUDManager.Instance.itemSlotIconFrames[playerData.previousHotbarIndex].GetComponent<Animator>().SetBool("selectedSlot", true);
-                            HUDManager.Instance.itemSlotIconFrames[hotbarIndex].GetComponent<Animator>().Play("PanelLines", 0, 1);
-                            HUDManager.Instance.itemSlotIconFrames[playerData.previousHotbarIndex].GetComponent<Animator>().Play("PanelEnlarge", 0, 1);
                         }
 
                         return;
@@ -272,11 +310,11 @@ namespace ReservedItemSlotCore.Patches
                 {
                     if (__instance == localPlayerController)
                     {
-                        Plugin.Log("Failed to validate ReservedItemGrab by the local player. Object id: " + grabbedObject.NetworkObjectId + ".");
+                        Plugin.LogWarning("Failed to validate ReservedItemGrab by the local player. Object id: " + grabbedObject.NetworkObjectId + ". Internal error?");
                         Traverse.Create(localPlayerController).Field("grabInvalidated").SetValue(true);
                     }
                     else
-                        Plugin.Log("Failed to validate ReservedItemGrab by player with id: " + __instance.name + ". Object id: " + grabbedObject.NetworkObjectId + ".");
+                        Plugin.LogWarning("Failed to validate ReservedItemGrab by player with id: " + __instance.name + ". Object id: " + grabbedObject.NetworkObjectId + ". Internal error?");
                 }
             }
 
@@ -294,14 +332,29 @@ namespace ReservedItemSlotCore.Patches
             IEnumerator OnReservedItemGrabbedEndOfFrame()
             {
                 yield return new WaitForEndOfFrame();
-                SwitchToItemSlot(localPlayerController, ReservedPlayerData.localPlayerData.previousHotbarIndex, null);
+
+                //if (!ReservedHotbarManager.isToggledInReservedSlots && !Keybinds.holdingModifierKey)
+                if (!localPlayerData.IsReservedItemSlot(localPlayerData.previousHotbarIndex))
+                {
+                    SwitchToItemSlot(localPlayerController, ReservedPlayerData.localPlayerData.previousHotbarIndex, null);
+                    __instance.PocketItem();
+
+                    SetSpecialGrabAnimationBool(localPlayerController, false);
+                    SetSpecialGrabAnimationBool(localPlayerController, localPlayerData.previouslyHeldItem != null, localPlayerData.previouslyHeldItem);
+                    localPlayerController.playerBodyAnimator.SetBool("GrabValidated", value: true);
+                    localPlayerController.playerBodyAnimator.SetBool("GrabInvalidated", value: false);
+                    localPlayerController.playerBodyAnimator.ResetTrigger("SwitchHoldAnimation");
+                    localPlayerController.playerBodyAnimator.ResetTrigger("SwitchHoldAnimationTwoHanded");
+                    if (localPlayerData.previouslyHeldItem != null)
+                        localPlayerController.playerBodyAnimator.ResetTrigger(localPlayerData.previouslyHeldItem.itemProperties.pocketAnim);
+                    localPlayerController.twoHanded = localPlayerData.previouslyHeldItem != null ? localPlayerData.previouslyHeldItem.itemProperties.twoHanded : false;
+                    localPlayerController.twoHandedAnimation = localPlayerData.previouslyHeldItem != null ? localPlayerData.previouslyHeldItem.itemProperties.twoHandedAnimation : false;
+                }
+
                 ReservedPlayerData.localPlayerData.grabbingReservedItemSlotData = null;
                 ReservedPlayerData.localPlayerData.grabbingReservedItemData = null;
                 ReservedPlayerData.localPlayerData.grabbingReservedItem = null;
                 ReservedPlayerData.localPlayerData.previousHotbarIndex = -1;
-                __instance.PocketItem();
-                //__instance.EnableItemMeshes(false);
-                localPlayerController.playerBodyAnimator.Play(localPlayerController.playerBodyAnimator.GetCurrentAnimatorStateInfo(2).shortNameHash, 2, 1);
             }
 
             if (ReservedPlayerData.localPlayerData.grabbingReservedItemData == null || __instance != GetCurrentlyGrabbingObject(localPlayerController))
@@ -312,11 +365,27 @@ namespace ReservedItemSlotCore.Patches
 
 
         [HarmonyPatch(typeof(PlayerControllerB), "SwitchToItemSlot")]
+        [HarmonyPrefix]
+        private static void UpdateLastSelectedHotbarIndex(int slot, PlayerControllerB __instance)
+        {
+            int currentSlot = __instance.currentItemSlot;
+            if (ReservedPlayerData.allPlayerData.TryGetValue(__instance, out var playerData))
+            {
+                if (playerData.IsReservedItemSlot(currentSlot))
+                    ReservedHotbarManager.indexInReservedHotbar = currentSlot;
+                else
+                    ReservedHotbarManager.indexInHotbar = currentSlot;
+            }
+        }
+
+        
+        [HarmonyPatch(typeof(PlayerControllerB), "SwitchToItemSlot")]
         [HarmonyPostfix]
-        public static void UpdateFocusReservedHotbar(int slot, PlayerControllerB __instance)
+        private static void UpdateFocusReservedHotbar(int slot, PlayerControllerB __instance)
         {
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled || !ReservedPlayerData.allPlayerData.TryGetValue(__instance, out var playerData))
                 return;
+            
             bool wasInReservedHotbarSlots = playerData.inReservedHotbarSlots;
             playerData.inReservedHotbarSlots = playerData.IsReservedItemSlot(__instance.currentItemSlot);
 
@@ -325,7 +394,15 @@ namespace ReservedItemSlotCore.Patches
                 updateToggledSlots = true;
 
             if (playerData.inReservedHotbarSlots)
+            {
                 ReservedHotbarManager.OnSwapToReservedHotbar();
+                /*var currentReservedItemSlot = playerData.GetCurrentlySelectedReservedItemSlot();
+                if (playerData.isLocalPlayer && !ConfigSettings.toggleFocusReservedHotbar.Value && !Keybinds.holdingModifierKey && !(ReservedHotbarManager.currentlyToggledItemSlots != null && ReservedHotbarManager.currentlyToggledItemSlots.Contains(currentReservedItemSlot)))
+                {
+                    ReservedHotbarManager.currentlyToggledItemSlots = new List<ReservedItemSlotData>() { currentReservedItemSlot };
+                    HUDPatcher.UpdateToggledReservedItemSlotsUI();
+                }*/
+            }
             else
                 ReservedHotbarManager.OnSwapToVanillaHotbar();
 
@@ -336,12 +413,13 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), "FirstEmptyItemSlot")]
         [HarmonyPostfix]
-        public static void GetReservedItemSlotPlacementIndex(ref int __result, PlayerControllerB __instance)
+        private static void GetReservedItemSlotPlacementIndex(ref int __result, PlayerControllerB __instance)
         {
             if (reservedHotbarSize <= 0 || !HUDPatcher.hasReservedItemSlotsAndEnabled)
                 return;
 
-            var playerData = ReservedPlayerData.allPlayerData[__instance];
+            if (!ReservedPlayerData.allPlayerData.TryGetValue(__instance, out var playerData))
+                return;
 
             var grabbingItemData = playerData.grabbingReservedItemData;
             if (grabbingItemData != null)
@@ -349,7 +427,7 @@ namespace ReservedItemSlotCore.Patches
                 var reservedItemSlot = playerData.GetFirstEmptySlotForReservedItem(grabbingItemData.itemName);
                 if (reservedItemSlot != null)
                 {
-                    __result = playerData.reservedHotbarStartIndex + reservedItemSlot.GetReservedItemSlotIndex();
+                    __result = reservedItemSlot.GetIndexInInventory(__instance);
                     return;
                 }
                 playerData.grabbingReservedItemSlotData = null;
@@ -375,42 +453,48 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), "NextItemSlot")]
         [HarmonyPostfix]
-        public static void OnNextItemSlot(ref int __result, bool forward, PlayerControllerB __instance)
+        private static void OnNextItemSlot(ref int __result, bool forward, PlayerControllerB __instance)
         {
             if (reservedHotbarSize <= 0 || !HUDPatcher.hasReservedItemSlotsAndEnabled)
                 return;
 
+            if (!ReservedPlayerData.allPlayerData.TryGetValue(__instance, out var playerData))
+                return;
+
             // Prevent scrolling other hotbar
             // Skip empty item slots (in reserved hotbar)
-            var playerData = ReservedPlayerData.allPlayerData[__instance];
-            bool inReservedHotbar = playerData.IsReservedItemSlot(__result);
-            bool switchToReservedItemSlot = playerData.inReservedHotbarSlots;
+            bool currentlyInReservedSlots = playerData.inReservedHotbarSlots;
+            bool resultInReservedSlots = playerData.IsReservedItemSlot(__result);
 
-            ReservedItemSlotData reservedItemSlot = null;
-            if (__result >= playerData.reservedHotbarStartIndex && __result < playerData.reservedHotbarStartIndex + reservedHotbarSize)
+            //bool inReservedHotbar = playerData.IsReservedItemSlot(__result);
+            bool switchToReservedItemSlot = currentlyInReservedSlots;
+
+            if (currentlyInReservedSlots)
             {
-                reservedItemSlot = SessionManager.GetUnlockedReservedItemSlot(__result - playerData.reservedHotbarStartIndex);
-                if (inReservedHotbar && playerData.inReservedHotbarSlots && ReservedHotbarManager.isToggledInReservedSlots && !ConfigSettings.toggleFocusReservedHotbar.Value && (!ReservedHotbarManager.currentlyToggledItemSlots.Contains(reservedItemSlot) || __instance.ItemSlots[__result] == null))
-                    switchToReservedItemSlot = false;
+                var resultReservedItemSlot = SessionManager.GetUnlockedReservedItemSlot(__result - playerData.reservedHotbarStartIndex);
+                if (ReservedHotbarManager.isToggledInReservedSlots && !ConfigSettings.toggleFocusReservedHotbar.Value && !Keybinds.holdingModifierKey && ReservedHotbarManager.currentlyToggledItemSlots != null && (!resultInReservedSlots || playerData.itemSlots[__result] == null || !ReservedHotbarManager.currentlyToggledItemSlots.Contains(resultReservedItemSlot)))
+                {
+                    __result = ReservedHotbarManager.indexInHotbar;
+                    return;
+                }
             }
-            //if (inReservedHotbar && playerData.inReservedHotbarSlots && ReservedHotbarManager.isToggledInReservedSlots && !ConfigSettings.toggleFocusReservedHotbar.Value && (!ReservedHotbarManager.currentlyToggledItemSlots.Contains(playerData.GetCurrentlySelectedReservedItemSlot()) || __instance.ItemSlots[__result] == null)) switchToReservedItemSlot = false;
 
-            if (inReservedHotbar == switchToReservedItemSlot && (!inReservedHotbar || __instance.ItemSlots[__result] != null))
+            if (resultInReservedSlots == switchToReservedItemSlot && (!resultInReservedSlots || __instance.ItemSlots[__result] != null))
                 return;
 
             int direction = forward ? 1 : -1;
             __result = __instance.currentItemSlot + direction;
             __result = __result < 0 ? __instance.ItemSlots.Length - 1 : (__result >= __instance.ItemSlots.Length ? 0 : __result);
-            bool resultInReservedHotbarSlots = playerData.IsReservedItemSlot(__result);
+            resultInReservedSlots = playerData.IsReservedItemSlot(__result);
 
             if (!switchToReservedItemSlot)
             {
-                if (resultInReservedHotbarSlots)
+                if (resultInReservedSlots)
                     __result = forward ? (playerData.reservedHotbarStartIndex + reservedHotbarSize) % __instance.ItemSlots.Length : playerData.reservedHotbarStartIndex - 1;
             }
             else
             {
-                __result = !resultInReservedHotbarSlots ? (forward ? playerData.reservedHotbarStartIndex : playerData.reservedHotbarStartIndex + reservedHotbarSize - 1) : __result;
+                __result = !resultInReservedSlots ? (forward ? playerData.reservedHotbarStartIndex : playerData.reservedHotbarStartIndex + reservedHotbarSize - 1) : __result;
                 int numHeldReservedItems = playerData.GetNumHeldReservedItems();
                 while (numHeldReservedItems > 0 && __result != playerData.currentItemSlot && __instance.ItemSlots[__result] == null)
                 {
@@ -421,14 +505,23 @@ namespace ReservedItemSlotCore.Patches
         }
 
 
+        [HarmonyPatch(typeof(PlayerControllerB), "SetObjectAsNoLongerHeld")]
+        [HarmonyPostfix]
+        private static void OnDiscardReservedItem(bool droppedInElevator, bool droppedInShipRoom, Vector3 targetFloorPosition, GrabbableObject dropObject, PlayerControllerB __instance)
+        {
+            if (__instance == localPlayerController)
+                HUDPatcher.UpdateUI();
+        }
+
+
         [HarmonyPatch(typeof(HUDManager), "ClearControlTips")]
         [HarmonyPrefix]
-        public static bool PreventClearControlTipsGrabbingReservedItem(HUDManager __instance) => ReservedPlayerData.localPlayerData == null || ReservedPlayerData.localPlayerData.grabbingReservedItem == null;
+        private static bool PreventClearControlTipsGrabbingReservedItem(HUDManager __instance) => ReservedPlayerData.localPlayerData == null || ReservedPlayerData.localPlayerData.grabbingReservedItem == null;
 
 
         [HarmonyPatch(typeof(GrabbableObject), "SetControlTipsForItem")]
         [HarmonyPrefix]
-        public static bool PreventUpdateControlTipsGrabbingReservedItem(GrabbableObject __instance) => ReservedPlayerData.localPlayerData == null || ReservedPlayerData.localPlayerData.grabbingReservedItem != __instance;
+        private static bool PreventUpdateControlTipsGrabbingReservedItem(GrabbableObject __instance) => ReservedPlayerData.localPlayerData == null || ReservedPlayerData.localPlayerData.grabbingReservedItem != __instance;
 
 
         static GrabbableObject GetCurrentlyGrabbingObject(PlayerControllerB playerController) => (GrabbableObject)Traverse.Create(playerController).Field("currentlyGrabbingObject").GetValue();
@@ -457,10 +550,10 @@ namespace ReservedItemSlotCore.Patches
 
         public static void SwitchToItemSlot(PlayerControllerB playerController, int slot, GrabbableObject fillSlotWithItem = null)
         {
-            var playerData = ReservedPlayerData.allPlayerData[playerController];
             MethodInfo method = playerController.GetType().GetMethod("SwitchToItemSlot", BindingFlags.NonPublic | BindingFlags.Instance);
             method.Invoke(playerController, new object[] { slot, fillSlotWithItem });
-            playerData.timeSinceSwitchingSlots = 0;
+            if (ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData))
+                playerData.timeSinceSwitchingSlots = 0;
         }
     }
 }
