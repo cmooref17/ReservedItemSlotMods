@@ -250,7 +250,6 @@ namespace ReservedItemSlotCore.Networking
                 }
             }
 
-
             if (sendToAllClients)
             {
                 Plugin.Log("Sending sync to all clients.");
@@ -274,6 +273,8 @@ namespace ReservedItemSlotCore.Networking
             unlockableReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
 
             Plugin.Log("Receiving sync from server.");
+            if (SessionManager.unlockedReservedItemSlots != null && SessionManager.unlockedReservedItemSlots.Count > 0)
+                SessionManager.ResetProgress(true);
 
             reader.ReadValue(out bool enablePurchasingItemSlots);
             reader.ReadValue(out int numEntries);

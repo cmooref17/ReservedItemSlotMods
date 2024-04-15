@@ -27,14 +27,16 @@ namespace ReservedItemSlotCore
         internal static Dictionary<string, ReservedItemSlotData> unlockedReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
 
         // Will be unlocked after finished syncing with server
-        private static List<ReservedItemSlotData> pendingUnlockedReservedItemSlots = new List<ReservedItemSlotData>();
-        private static Dictionary<string, ReservedItemSlotData> pendingUnlockedReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
+        internal static List<ReservedItemSlotData> pendingUnlockedReservedItemSlots = new List<ReservedItemSlotData>();
+        internal static Dictionary<string, ReservedItemSlotData> pendingUnlockedReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
 
         /// <summary>All reserved item data in currentlyUnlockedSlots</summary>
         private static Dictionary<string, ReservedItemData> allReservedItemData = new Dictionary<string, ReservedItemData>();
 
         /// <summary>Number of currently unlocked item slots.</summary>
         public static int numReservedItemSlotsUnlocked { get { return unlockedReservedItemSlots != null ? unlockedReservedItemSlots.Count : 0; } }
+
+        internal static bool gameStarted = false;
 
 
         [HarmonyPatch(typeof(StartOfRound), "Awake")]
@@ -48,6 +50,24 @@ namespace ReservedItemSlotCore
             allReservedItemData.Clear();
         }
 
+/*
+        [HarmonyPatch(typeof(StartOfRound), "ResetPlayersLoadedValueClientRpc")]
+        [HarmonyPostfix]
+        private static void OnStartGame(StartOfRound __instance, bool landingShip = false)
+        {
+            if (!SyncManager.isSynced && SyncManager.canUseModDisabledOnHost)
+            {
+                SyncManager.enablePurchasingItemSlots = false;
+                ReservedPlayerData.localPlayerData.reservedHotbarStartIndex = ReservedPlayerData.localPlayerData.itemSlots.Length;
+                foreach (var reservedItemSlotData in Plugin.customItemSlots)
+                {
+                    SyncManager.AddReservedItemSlotData(reservedItemSlotData);
+                    UnlockReservedItemSlot(reservedItemSlotData);
+                }
+                SyncManager.UpdateReservedItemsList();
+            }
+        }
+*/
 
         /// <summary>
         /// Unlocks the specified reserved item slot for the local client.
@@ -206,14 +226,13 @@ namespace ReservedItemSlotCore
         }
 
 
-        internal static void ResetProgress()
+        internal static void ResetProgress(bool force = false)
         {
-            if (!SyncManager.enablePurchasingItemSlots)
+            if (!SyncManager.enablePurchasingItemSlots && !force)
                 return;
 
             foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
             {
-                PlayerPatcher.SwitchToItemSlot(playerData.playerController, 0);
                 var itemSlots = playerData.playerController.ItemSlots;
                 List<GrabbableObject> newItemSlots = new List<GrabbableObject>();
                 for (int i = 0; i < itemSlots.Length; i++)
@@ -224,12 +243,10 @@ namespace ReservedItemSlotCore
                 playerData.playerController.ItemSlots = newItemSlots.ToArray();
             }
 
-            pendingUnlockedReservedItemSlots?.Clear();
             unlockedReservedItemSlots?.Clear();
             unlockedReservedItemSlotsDict?.Clear();
-
-            var itemSlotFrames = new List<Image>(HUDManager.Instance.itemSlotIconFrames);
-            var itemSlotIcons = new List<Image>(HUDManager.Instance.itemSlotIcons);
+            pendingUnlockedReservedItemSlots?.Clear();
+            pendingUnlockedReservedItemSlotsDict?.Clear();
 
             List<Image> newItemSlotFrames = new List<Image>();
             List<Image> newItemSlotIcons = new List<Image>();
@@ -256,14 +273,24 @@ namespace ReservedItemSlotCore
                     UnlockReservedItemSlot(reservedItemSlot);
             }
 
+            foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
+            {
+                if (playerData.playerController.currentItemSlot < 0 || playerData.playerController.currentItemSlot >= playerData.playerController.ItemSlots.Length)
+                    PlayerPatcher.SwitchToItemSlot(playerData.playerController, 0);
+            }
+
             HUDPatcher.OnUpdateReservedItemSlots();
 
-            ES3.DeleteKey("ReservedItemSlots.UnlockedItemSlots", GameNetworkManager.Instance.currentSaveFileName);
+            if (NetworkManager.Singleton.IsServer)
+                ES3.DeleteKey("ReservedItemSlots.UnlockedItemSlots", GameNetworkManager.Instance.currentSaveFileName);
         }
 
 
         internal static void SaveGameValues()
         {
+            if (!NetworkManager.Singleton.IsServer)
+                return;
+
             List<string> unlockedItemSlots = new List<string>();
             foreach(var itemSlot in unlockedReservedItemSlots)
             {
@@ -286,6 +313,9 @@ namespace ReservedItemSlotCore
 
         internal static void LoadGameValues()
         {
+            if (!NetworkManager.Singleton.IsServer)
+                return;
+
             string[] unlockedItemSlots = ES3.Load("ReservedItemSlots.UnlockedItemSlots", GameNetworkManager.Instance.currentSaveFileName, new string[0]);
             Plugin.LogWarning("Loading " + unlockedItemSlots.Length + " unlocked reserved item slots.");
             foreach (var itemSlotName in unlockedItemSlots)

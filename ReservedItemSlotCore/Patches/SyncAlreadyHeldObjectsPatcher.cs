@@ -14,10 +14,10 @@ namespace ReservedItemSlotCore.Patches
     {
         [HarmonyPatch(typeof(StartOfRound), "SyncAlreadyHeldObjectsClientRpc")]
         [HarmonyPrefix]
-        private static void SyncAlreadyHeldReservedObjectsClientRpc(ref NetworkObjectReference[] gObjects, ref int[] playersHeldBy, ref int[] itemSlotNumbers, ref int[] isObjectPocketed, int syncWithClient, StartOfRound __instance)
+        private static bool SyncAlreadyHeldReservedObjectsClientRpc(ref NetworkObjectReference[] gObjects, ref int[] playersHeldBy, ref int[] itemSlotNumbers, ref int[] isObjectPocketed, int syncWithClient, StartOfRound __instance)
         {
             if (!NetworkHelper.IsClientExecStage(__instance))
-                return;
+                return false;
 
             bool saveChanges = false;
 
@@ -45,6 +45,7 @@ namespace ReservedItemSlotCore.Patches
                 itemSlotNumbers = newItemSlotNumbers.ToArray();
                 isObjectPocketed = newIsObjectPocketed.ToArray();
             }
+            return true;
         }
     }
 }

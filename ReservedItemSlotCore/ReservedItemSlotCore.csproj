@@ -104,7 +104,7 @@
     <Compile Include="Compatibility\GeneralImprovements_Patcher.cs" />
     <Compile Include="Compatibility\AdvancedCompany_Patcher.cs" />
     <Compile Include="Compatibility\HotbarPlus_Compat.cs" />
-    <Compile Include="Compatibility\TooManyEmotes_Patcher.cs" />
+    <Compile Include="Compatibility\TooManyEmotes_Compat.cs" />
     <Compile Include="Config\ConfigSettings.cs" />
     <Compile Include="Data\BoneMap.cs" />
     <Compile Include="Data\MaskedEnemyData.cs" />

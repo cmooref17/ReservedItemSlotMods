@@ -147,7 +147,7 @@ namespace ReservedItemSlotCore
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled)
                 return false;
 
-            if (TooManyEmotes_Patcher.Enabled && TooManyEmotes_Patcher.IsLocalPlayerPerformingCustomEmote() && !TooManyEmotes_Patcher.CanMoveWhileEmoting())
+            if (TooManyEmotes_Compat.Enabled && TooManyEmotes_Compat.IsLocalPlayerPerformingCustomEmote() && !TooManyEmotes_Compat.CanMoveWhileEmoting())
                 return false;
 
             //if (!ReservedPlayerData.localPlayerData.currentItemSlotIsReserved && ReservedPlayerData.localPlayerData.GetNumHeldReservedItems() <= 0)
