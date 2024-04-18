@@ -288,7 +288,7 @@ namespace ReservedItemSlotCore
 
         internal static void SaveGameValues()
         {
-            if (!NetworkManager.Singleton.IsServer)
+            if (!NetworkManager.Singleton.IsServer || unlockedReservedItemSlots == null)
                 return;
 
             List<string> unlockedItemSlots = new List<string>();
@@ -313,7 +313,7 @@ namespace ReservedItemSlotCore
 
         internal static void LoadGameValues()
         {
-            if (!NetworkManager.Singleton.IsServer)
+            if (!NetworkManager.Singleton.IsServer || SyncManager.unlockableReservedItemSlotsDict == null)
                 return;
 
             string[] unlockedItemSlots = ES3.Load("ReservedItemSlots.UnlockedItemSlots", GameNetworkManager.Instance.currentSaveFileName, new string[0]);

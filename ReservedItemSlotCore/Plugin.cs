@@ -19,7 +19,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using ReservedItemSlotCore.Data;
 
-
 namespace ReservedItemSlotCore
 {
 	[BepInPlugin("FlipMods.ReservedItemSlotCore", "ReservedItemSlotCore", "2.0.20")]
