@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ReservedItemSlotCore.Networking;
 using System.Reflection;
+using BepInEx.Logging;
 
 namespace ReservedItemSlotCore.Data
 {
@@ -152,6 +153,12 @@ namespace ReservedItemSlotCore.Data
             if (grabbableObject == null)
                 return false;
 
+            if (reservedHotbarStartIndex < 0 || (reservedHotbarEndIndexExcluded - 1) >= itemSlots.Length)
+            {
+                Plugin.LogError("Failed to check if item was in reserved item slot. Start or end reserved item slot index was outside the bounds of the player's item slots. Start index: " + reservedHotbarStartIndex + " EndIndex: " + (reservedHotbarEndIndexExcluded - 1) + " InventorySize: " + itemSlots.Length);
+                Plugin.LogError("Reporting this to Flip would be greatly appreciated :)");
+                return false;
+            }
             for (int i = reservedHotbarStartIndex; i < reservedHotbarEndIndexExcluded; i++)
             {
                 if (grabbableObject == itemSlots[i])

@@ -558,9 +558,15 @@ namespace ReservedItemSlotCore.Networking
         {
             if (!NetworkManager.Singleton.IsClient)
                 return;
-            //Plugin.Log("Sending OnSwapReservedHotbar update to server. Hotbar slot: " + hotbarSlot);
-            var writer = new FastBufferWriter(sizeof(int), Allocator.Temp);
-            writer.WriteValue(hotbarSlot);
+
+            if (NetworkManager.Singleton.IsServer)
+            {
+                SendSwapHotbarUpdateToClients(localPlayerController.actualClientId, hotbarSlot);
+                return;
+            }
+
+            var writer = new FastBufferWriter(sizeof(short), Allocator.Temp);
+            writer.WriteValue((short)hotbarSlot);
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ReservedItemSlotCore.OnSwapHotbarServerRpc", NetworkManager.ServerClientId, writer);
         }
 
@@ -571,7 +577,7 @@ namespace ReservedItemSlotCore.Networking
             if (!NetworkManager.Singleton.IsServer)
                 return;
 
-            reader.ReadValue(out int hotbarIndex);
+            reader.ReadValue(out short hotbarIndex);
             if (NetworkManager.Singleton.IsClient && clientId != localPlayerController.actualClientId)
             {
                 Plugin.Log("Receiving OnSwapReservedHotbar update from client. ClientId: " + clientId + " Slot: " + hotbarIndex);
@@ -586,9 +592,9 @@ namespace ReservedItemSlotCore.Networking
             if (!NetworkManager.Singleton.IsServer)
                 return;
 
-            var writer = new FastBufferWriter(sizeof(int) + sizeof(ulong), Allocator.Temp);
-            writer.WriteValueSafe(hotbarIndex);
-            writer.WriteValueSafe(clientId);
+            var writer = new FastBufferWriter(sizeof(short) + sizeof(uint), Allocator.Temp);
+            writer.WriteValueSafe((short)hotbarIndex);
+            writer.WriteValueSafe((uint)clientId);
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("ReservedItemSlotCore.OnSwapHotbarClientRpc", writer);
         }
 
@@ -599,12 +605,16 @@ namespace ReservedItemSlotCore.Networking
             if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
                 return;
 
-            reader.ReadValue(out int hotbarIndex);
-            reader.ReadValue(out ulong swappingClientId);
-            Plugin.Log("Receiving OnSwapReservedHotbar update from client. ClientId: " + swappingClientId + " Slot: " + hotbarIndex);
-                
-            if (swappingClientId == localPlayerController.actualClientId || TryUpdateClientHotbarSlot(swappingClientId, hotbarIndex))
+            reader.ReadValue(out short hotbarIndex);
+            reader.ReadValue(out uint swappingClientId);
+
+            if (swappingClientId == localPlayerController.actualClientId)
                 return;
+
+            Plugin.Log("Receiving OnSwapReservedHotbar update from client. ClientId: " + swappingClientId + " Slot: " + hotbarIndex);
+            if (TryUpdateClientHotbarSlot(swappingClientId, hotbarIndex))
+                return;
+
             Plugin.Log("Failed to receive hotbar swap index from Client: " + swappingClientId);
         }
 

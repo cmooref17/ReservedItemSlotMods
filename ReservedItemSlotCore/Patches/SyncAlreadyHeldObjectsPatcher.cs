@@ -2,6 +2,7 @@
 using ReservedItemSlotCore.Networking;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,12 +13,25 @@ namespace ReservedItemSlotCore.Patches
     [HarmonyPatch]
     internal static class SyncAlreadyHeldObjectsPatcher
     {
+        [HarmonyPatch(typeof(StartOfRound), "SyncShipUnlockablesServerRpc")]
+        [HarmonyPrefix]
+        private static void SyncAlreadyHeldReservedObjectsClientRpc()
+        {
+
+        }
+
         [HarmonyPatch(typeof(StartOfRound), "SyncAlreadyHeldObjectsClientRpc")]
         [HarmonyPrefix]
         private static bool SyncAlreadyHeldReservedObjectsClientRpc(ref NetworkObjectReference[] gObjects, ref int[] playersHeldBy, ref int[] itemSlotNumbers, ref int[] isObjectPocketed, int syncWithClient, StartOfRound __instance)
         {
-            if (!NetworkHelper.IsClientExecStage(__instance))
-                return false;
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+                return true;
+
+            if (NetworkHelper.IsClientExecStage(__instance) || (!NetworkManager.Singleton.IsServer && !NetworkManager.Singleton.IsHost))
+            {
+                if (!NetworkHelper.IsClientExecStage(__instance) || (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsHost) || syncWithClient != (int)NetworkManager.Singleton.LocalClientId)
+                    return false;
+            }
 
             bool saveChanges = false;
 

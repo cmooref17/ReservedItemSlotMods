@@ -124,6 +124,12 @@ namespace ReservedItemSlotCore.Patches
                 canvasGroup.ignoreParentGroups = ConfigSettings.preventReservedItemSlotFade.Value;
                 canvasGroup.alpha = 1;
 
+                Plugin.LogWarning("MatName: " + newItemSlotFrames[0].material.name);
+                itemSlotFrame.fillMethod = newItemSlotFrames[0].fillMethod;
+                itemSlotFrame.sprite = newItemSlotFrames[0].sprite;
+                itemSlotFrame.overrideSprite = newItemSlotFrames[0].overrideSprite;
+                itemSlotFrame.material = newItemSlotFrames[0].material;
+
                 int insertIndex = ReservedPlayerData.localPlayerData.reservedHotbarStartIndex + reservedItemSlots.Count;
                 newItemSlotFrames.Insert(insertIndex, itemSlotFrame);
                 newItemSlotIcons.Insert(insertIndex, itemSlotIcon);

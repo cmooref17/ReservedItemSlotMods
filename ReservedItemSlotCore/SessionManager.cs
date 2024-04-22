@@ -221,7 +221,7 @@ namespace ReservedItemSlotCore
         [HarmonyPostfix]
         private static void OnLoadGameValues()
         {
-            if (NetworkManager.Singleton.IsHost && SyncManager.isSynced && SyncManager.enablePurchasingItemSlots)
+            if (NetworkManager.Singleton.IsServer && SyncManager.isSynced && SyncManager.enablePurchasingItemSlots)
                 LoadGameValues();
         }
 
@@ -267,16 +267,16 @@ namespace ReservedItemSlotCore
             HUDManager.Instance.itemSlotIconFrames = newItemSlotFrames.ToArray();
             HUDManager.Instance.itemSlotIcons = newItemSlotIcons.ToArray();
 
-            foreach (var reservedItemSlot in allUnlockableReservedItemSlots)
-            {
-                if (reservedItemSlot.purchasePrice <= 0)
-                    UnlockReservedItemSlot(reservedItemSlot);
-            }
-
             foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
             {
                 if (playerData.playerController.currentItemSlot < 0 || playerData.playerController.currentItemSlot >= playerData.playerController.ItemSlots.Length)
                     PlayerPatcher.SwitchToItemSlot(playerData.playerController, 0);
+                playerData.reservedHotbarStartIndex = playerData.itemSlots.Length;
+            }
+            foreach (var reservedItemSlot in allUnlockableReservedItemSlots)
+            {
+                if (reservedItemSlot.purchasePrice <= 0)
+                    UnlockReservedItemSlot(reservedItemSlot);
             }
 
             HUDPatcher.OnUpdateReservedItemSlots();
