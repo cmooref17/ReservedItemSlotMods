@@ -10,6 +10,7 @@ using UnityEngine.InputSystem;
 using ReservedItemSlotCore;
 using ReservedItemSlotCore.Data;
 using ReservedFlashlightSlot.Config;
+using System.Runtime.CompilerServices;
 
 
 namespace ReservedFlashlightSlot.Patches
@@ -20,9 +21,13 @@ namespace ReservedFlashlightSlot.Patches
         public static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
         public static PlayerControllerB GetPreviousPlayerHeldBy(FlashlightItem flashlightItem) => (PlayerControllerB)Traverse.Create(flashlightItem).Field("previousPlayerHeldBy").GetValue();
 
-        public static FlashlightItem GetMainFlashlight(PlayerControllerB playerController) => GetCurrentlySelectedFlashlight(playerController) ?? GetReservedFlashlight(playerController);
+        public static FlashlightItem GetMainFlashlight(PlayerControllerB playerController)
+        {
+            return GetCurrentlySelectedFlashlight(playerController) ?? GetReservedFlashlight(playerController) ?? GetFirstFlashlightItem(playerController);
+        }
         public static FlashlightItem GetReservedFlashlight(PlayerControllerB playerController) => SessionManager.TryGetUnlockedItemSlotData(Plugin.flashlightSlotData.slotName, out var itemSlot) && ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData) ? playerData.GetReservedItem(itemSlot) as FlashlightItem : null;
         public static FlashlightItem GetCurrentlySelectedFlashlight(PlayerControllerB playerController) => playerController.currentItemSlot >= 0 && playerController.currentItemSlot < playerController.ItemSlots.Length ? playerController?.ItemSlots[playerController.currentItemSlot] as FlashlightItem : null;
+        public static FlashlightItem GetFirstFlashlightItem(PlayerControllerB playerController) { foreach (var item in playerController.ItemSlots) { if (item != null && item is FlashlightItem flashlightItem) return flashlightItem; } return null; }
 
         public static bool IsFlashlightOn(PlayerControllerB playerController) => GetMainFlashlight(playerController)?.isBeingUsed ?? false;
 
@@ -110,7 +115,23 @@ namespace ReservedFlashlightSlot.Patches
         }
 
 
-        static void UpdateAllFlashlightStates(PlayerControllerB playerController, bool mainFlashlightActive = true)
+        [HarmonyPatch(typeof(FlashlightItem), "SwitchFlashlight")]
+        [HarmonyPostfix]
+        public static void OnToggleFlashlight(bool on, FlashlightItem __instance)
+        {
+            if (__instance.isBeingUsed)
+            {
+                if (__instance.playerHeldBy != null && __instance != __instance.playerHeldBy.ItemSlots[__instance.playerHeldBy.currentItemSlot])
+                {
+                    if (__instance.playerHeldBy.pocketedFlashlight != null && __instance.playerHeldBy.pocketedFlashlight != __instance && __instance.playerHeldBy.pocketedFlashlight.isBeingUsed)
+                        ((FlashlightItem)__instance.playerHeldBy.pocketedFlashlight).SwitchFlashlight(false);
+                    __instance.playerHeldBy.pocketedFlashlight = __instance;
+                }
+            }
+        }
+
+
+        public static void UpdateAllFlashlightStates(PlayerControllerB playerController, bool mainFlashlightActive = true)
         {
             FlashlightItem mainFlashlight = GetMainFlashlight(playerController);
             if (mainFlashlight == null)
@@ -130,7 +151,7 @@ namespace ReservedFlashlightSlot.Patches
         }
 
 
-        static void UpdateFlashlightState(FlashlightItem flashlightItem, bool active)
+        public static void UpdateFlashlightState(FlashlightItem flashlightItem, bool active)
         {
             if (flashlightItem.playerHeldBy == null)
                 return;

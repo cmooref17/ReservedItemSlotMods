@@ -79,7 +79,7 @@ namespace ReservedWalkieSlot.Input
             if (!context.performed || mainWalkie == null || !mainWalkie.isBeingUsed || ShipBuildModeManager.Instance.InBuildMode)
                 return;
 
-            if (localPlayerController.isTypingChat || localPlayerController.quickMenuManager.isMenuOpen || localPlayerController.isPlayerDead || localPlayerController.isGrabbingObjectAnimation || ReservedPlayerData.localPlayerData.isGrabbingReservedItem)
+            if (localPlayerController.isTypingChat || localPlayerController.quickMenuManager.isMenuOpen || localPlayerController.isPlayerDead || ReservedPlayerData.localPlayerData.isGrabbingReservedItem)
                 return;
 
             float timeSinceSwitchingSlots = (float)Traverse.Create(localPlayerController).Field("timeSinceSwitchingSlots").GetValue();
