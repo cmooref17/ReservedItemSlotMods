@@ -33,9 +33,36 @@ namespace ReservedFlashlightSlot.Patches
         {
             if (__instance.playerHeldBy == null)
                 return;
-
-            //FlashlightItem flashlightItem = GetMainFlashlight(__instance.playerHeldBy);
-            UpdateAllFlashlightStates(__instance.playerHeldBy, on);
+            
+            if (__instance.playerHeldBy.ItemSlots[__instance.playerHeldBy.currentItemSlot] != __instance)
+            {
+                Plugin.LogWarning("AAA On: " + on + " IsBeingUsed: " + __instance.isBeingUsed);
+                var pocketedFlashlight = __instance.playerHeldBy.pocketedFlashlight as FlashlightItem;
+                if (on && __instance.isBeingUsed)
+                {
+                    Plugin.LogWarning("BBB");
+                    if (pocketedFlashlight != __instance)
+                    {
+                        Plugin.LogWarning("CCC");
+                        if (pocketedFlashlight != null && pocketedFlashlight.isBeingUsed)
+                        {
+                            Plugin.LogWarning("DDD");
+                            pocketedFlashlight.SwitchFlashlight(false);
+                        }
+                        __instance.playerHeldBy.pocketedFlashlight = __instance;
+                    }
+                    UpdateFlashlightState(__instance, true);
+                }
+                else
+                {
+                    Plugin.LogWarning("EEE");
+                    if (pocketedFlashlight == __instance)
+                    {
+                        Plugin.LogWarning("FFF");
+                        __instance.playerHeldBy.pocketedFlashlight = null;
+                    }
+                }
+            }
         }
 
 
@@ -68,6 +95,7 @@ namespace ReservedFlashlightSlot.Patches
             var currentlySelectedFlashlight = GetCurrentlySelectedFlashlight(flashlightItem.playerHeldBy);
             var reservedFlashlight = GetReservedFlashlight(flashlightItem.playerHeldBy);
             bool isBeingUsed = stillUsingFlashlight || (currentlySelectedFlashlight != null && currentlySelectedFlashlight.isBeingUsed);
+
             if (currentlySelectedFlashlight != null && currentlySelectedFlashlight.isBeingUsed)
                 flashlightItem.playerHeldBy.pocketedFlashlight = null;
             else if (flashlightItem.isBeingUsed)
@@ -110,7 +138,7 @@ namespace ReservedFlashlightSlot.Patches
         }
 
 
-        static void UpdateAllFlashlightStates(PlayerControllerB playerController, bool mainFlashlightActive = true)
+        internal static void UpdateAllFlashlightStates(PlayerControllerB playerController, bool mainFlashlightActive = true)
         {
             FlashlightItem mainFlashlight = GetMainFlashlight(playerController);
             if (mainFlashlight == null)
@@ -130,7 +158,7 @@ namespace ReservedFlashlightSlot.Patches
         }
 
 
-        static void UpdateFlashlightState(FlashlightItem flashlightItem, bool active)
+        internal static void UpdateFlashlightState(FlashlightItem flashlightItem, bool active)
         {
             if (flashlightItem.playerHeldBy == null)
                 return;
@@ -139,7 +167,7 @@ namespace ReservedFlashlightSlot.Patches
 
             flashlightItem.isBeingUsed = active;
 
-            bool useFlashlightLight = heldByPlayer != localPlayerController || heldByPlayer.ItemSlots[heldByPlayer.currentItemSlot] == flashlightItem;
+            bool useFlashlightLight = heldByPlayer != localPlayerController || flashlightItem == GetCurrentlySelectedFlashlight(heldByPlayer);
             flashlightItem.flashlightBulb.enabled = active && useFlashlightLight;
             flashlightItem.flashlightBulbGlow.enabled = active && useFlashlightLight;
             flashlightItem.usingPlayerHelmetLight = active && !useFlashlightLight;
