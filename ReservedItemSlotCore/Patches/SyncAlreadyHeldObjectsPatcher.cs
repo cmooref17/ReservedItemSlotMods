@@ -13,13 +13,6 @@ namespace ReservedItemSlotCore.Patches
     [HarmonyPatch]
     internal static class SyncAlreadyHeldObjectsPatcher
     {
-        [HarmonyPatch(typeof(StartOfRound), "SyncShipUnlockablesServerRpc")]
-        [HarmonyPrefix]
-        private static void SyncAlreadyHeldReservedObjectsClientRpc()
-        {
-
-        }
-
         [HarmonyPatch(typeof(StartOfRound), "SyncAlreadyHeldObjectsClientRpc")]
         [HarmonyPrefix]
         private static bool SyncAlreadyHeldReservedObjectsClientRpc(ref NetworkObjectReference[] gObjects, ref int[] playersHeldBy, ref int[] itemSlotNumbers, ref int[] isObjectPocketed, int syncWithClient, StartOfRound __instance)

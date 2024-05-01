@@ -507,15 +507,6 @@ namespace ReservedItemSlotCore.Patches
         }
 
 
-        [HarmonyPatch(typeof(PlayerControllerB), "SetObjectAsNoLongerHeld")]
-        [HarmonyPostfix]
-        private static void OnDiscardReservedItem(bool droppedInElevator, bool droppedInShipRoom, Vector3 targetFloorPosition, GrabbableObject dropObject, PlayerControllerB __instance)
-        {
-            if (__instance == localPlayerController)
-                HUDPatcher.UpdateUI();
-        }
-
-
         [HarmonyPatch(typeof(HUDManager), "ClearControlTips")]
         [HarmonyPrefix]
         private static bool PreventClearControlTipsGrabbingReservedItem(HUDManager __instance) => ReservedPlayerData.localPlayerData == null || ReservedPlayerData.localPlayerData.grabbingReservedItem == null;
