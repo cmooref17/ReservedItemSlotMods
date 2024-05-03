@@ -21,7 +21,7 @@ using ReservedItemSlotCore.Data;
 
 namespace ReservedItemSlotCore
 {
-	[BepInPlugin("FlipMods.ReservedItemSlotCore", "ReservedItemSlotCore", "2.0.24")]
+	[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     internal class Plugin : BaseUnityPlugin
     {
@@ -43,9 +43,9 @@ namespace ReservedItemSlotCore
             if (InputUtilsCompat.Enabled)
                 InputUtilsCompat.Init();
 
-			this._harmony = new Harmony("ReservedItemSlotCore");
+			this._harmony = new Harmony(PluginInfo.PLUGIN_NAME);
             PatchAll();
-            Log("ReservedItemSlotCore loaded");
+            Log(PluginInfo.PLUGIN_NAME + " loaded");
 		}
 
 

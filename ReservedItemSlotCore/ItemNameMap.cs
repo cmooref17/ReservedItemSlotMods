@@ -16,14 +16,20 @@ namespace ReservedItemSlotCore
 
 
         [HarmonyPatch(typeof(StartOfRound), "Start")]
-        [HarmonyPostfix]
+        [HarmonyPrefix]
         private static void RecordOriginalItemNames(StartOfRound __instance)
         {
-            foreach (var item in __instance.allItemsList.itemsList)
+            var itemsList = __instance?.allItemsList?.itemsList;
+            if (itemsList == null)
             {
-                string originalItemName = item.itemName;
+                Plugin.LogError("Failed to record original item names. This might be fine if you're not using translation/localization mods. (no guarantees)");
+                return;
+            }
+            foreach (var item in itemsList)
+            {
+                string originalItemName = item?.itemName;
 
-                if (item != null && originalItemName.Length > 0)
+                if (originalItemName != null && originalItemName.Length > 0)
                 {
                     if (!itemToNameMap.ContainsKey(item))
                         itemToNameMap.Add(item, originalItemName);
@@ -39,7 +45,8 @@ namespace ReservedItemSlotCore
             if (grabbableObject?.itemProperties == null)
                 return "";
 
-            return GetItemName(grabbableObject.itemProperties);
+            string itemName = GetItemName(grabbableObject.itemProperties);
+            return itemName != null ? itemName : "";
         }
 
 
@@ -48,7 +55,7 @@ namespace ReservedItemSlotCore
             if (item == null)
                 return "";
 
-            if (itemToNameMap.TryGetValue(item, out var itemName))
+            if (itemToNameMap.TryGetValue(item, out var itemName) && itemName != null)
                 return itemName;
 
             return "";

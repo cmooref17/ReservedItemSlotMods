@@ -245,11 +245,31 @@ namespace ReservedItemSlotCore.Data
 
         //public bool ContainsItem(GrabbableObject grabbableObject) => grabbableObject?.itemProperties != null && ContainsItem(grabbableObject.itemProperties.itemName);
         //public bool ContainsItem(Item item) => item != null && ContainsItem(item.itemName);
-        public bool ContainsItem(string itemName) => reservedItemData != null && reservedItemData.ContainsKey(itemName);
+        public bool ContainsItem(string itemName) => itemName != null && reservedItemData != null && reservedItemData.ContainsKey(itemName);
 
 
-        public ReservedItemData GetReservedItemData(GrabbableObject grabbableObject) { string originalItemName = ItemNameMap.GetItemName(grabbableObject); var itemData = GetReservedItemData(originalItemName); if (itemData != null) return itemData; return grabbableObject?.itemProperties != null ? GetReservedItemData(grabbableObject.itemProperties.itemName) : null; }
-        public ReservedItemData GetReservedItemData(Item item) { string originalItemName = ItemNameMap.GetItemName(item); var itemData = GetReservedItemData(originalItemName); if (itemData != null) return itemData; return item != null ? GetReservedItemData(item.itemName) : null; }
-        public ReservedItemData GetReservedItemData(string itemName) => reservedItemData.ContainsKey(itemName) ? reservedItemData[itemName] : null;
+        public ReservedItemData GetReservedItemData(GrabbableObject grabbableObject)
+        {
+            if (grabbableObject?.itemProperties?.itemName == null)
+                return null;
+
+            string originalItemName = ItemNameMap.GetItemName(grabbableObject);
+            var itemData = GetReservedItemData(originalItemName);
+            if (itemData != null)
+                return itemData;
+            return grabbableObject?.itemProperties != null ? GetReservedItemData(grabbableObject.itemProperties.itemName) : null;
+        }
+        public ReservedItemData GetReservedItemData(Item item)
+        {
+            if (item?.itemName == null)
+                return null;
+
+            string originalItemName = ItemNameMap.GetItemName(item);
+            var itemData = GetReservedItemData(originalItemName);
+            if (itemData != null)
+                return itemData;
+            return item != null ? GetReservedItemData(item.itemName) : null;
+        }
+        public ReservedItemData GetReservedItemData(string itemName) => itemName != null && reservedItemData.ContainsKey(itemName) ? reservedItemData[itemName] : null;
     }
 }

@@ -34,6 +34,9 @@ namespace ReservedItemSlotCore.Networking
 
         public static bool IsReservedItem(string itemName)
         {
+            if (itemName == null)
+                return false;
+
             foreach (var itemSlot in unlockableReservedItemSlots)
             {
                 if (itemSlot.ContainsItem(itemName))
