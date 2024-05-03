@@ -13,6 +13,7 @@ using ReservedItemSlotCore.Config;
 using ReservedItemSlotCore.Input;
 using ReservedItemSlotCore.Compatibility;
 using ReservedItemSlotCore.Data;
+using UnityEngine.Assertions;
 
 namespace ReservedItemSlotCore.Patches
 {
@@ -114,7 +115,8 @@ namespace ReservedItemSlotCore.Patches
 
             for (int i = reservedItemSlots.Count; i < SessionManager.numReservedItemSlotsUnlocked; i++)
             {
-                Image itemSlotFrame = GameObject.Instantiate(newItemSlotFrames[0], newItemSlotFrames[0].transform.parent);
+                var itemSlotFrameObj = GameObject.Instantiate(newItemSlotFrames[0].gameObject, newItemSlotFrames[0].transform.parent);
+                Image itemSlotFrame = itemSlotFrameObj.GetComponent<Image>();
                 Image itemSlotIcon = itemSlotFrame.transform.GetChild(0).GetComponent<Image>();
                 itemSlotFrame.transform.localScale = newItemSlotFrames[0].transform.localScale;
                 itemSlotFrame.rectTransform.eulerAngles = newItemSlotFrames[0].rectTransform.eulerAngles;
@@ -124,11 +126,11 @@ namespace ReservedItemSlotCore.Patches
                 canvasGroup.ignoreParentGroups = ConfigSettings.preventReservedItemSlotFade.Value;
                 canvasGroup.alpha = 1;
 
-                Plugin.LogWarning("MatName: " + newItemSlotFrames[0].material.name);
                 itemSlotFrame.fillMethod = newItemSlotFrames[0].fillMethod;
                 itemSlotFrame.sprite = newItemSlotFrames[0].sprite;
-                itemSlotFrame.overrideSprite = newItemSlotFrames[0].overrideSprite;
                 itemSlotFrame.material = newItemSlotFrames[0].material;
+                if (Plugin.IsModLoaded("xuxiaolan.hotbarrd"))
+                    itemSlotFrame.overrideSprite = newItemSlotFrames[0].overrideSprite;
 
                 int insertIndex = ReservedPlayerData.localPlayerData.reservedHotbarStartIndex + reservedItemSlots.Count;
                 newItemSlotFrames.Insert(insertIndex, itemSlotFrame);
