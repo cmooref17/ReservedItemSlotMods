@@ -44,6 +44,24 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPostfix]
         private static void OnDestroyItem(int itemSlot, PlayerControllerB __instance)
         {
+            if (__instance == localPlayerController && itemSlot >= ReservedPlayerData.localPlayerData.reservedHotbarStartIndex && itemSlot < ReservedPlayerData.localPlayerData.reservedHotbarEndIndexExcluded)
+                HUDPatcher.UpdateUI();
+        }
+
+
+        [HarmonyPatch(typeof(PlayerControllerB), "DespawnHeldObjectOnClient")]
+        [HarmonyPostfix]
+        private static void OnDespawnItem(PlayerControllerB __instance)
+        {
+            if (__instance == localPlayerController)
+                HUDPatcher.UpdateUI();
+        }
+
+
+        [HarmonyPatch(typeof(PlayerControllerB), "DropAllHeldItems")]
+        [HarmonyPostfix]
+        private static void OnDropAllHeldItems(PlayerControllerB __instance)
+        {
             if (__instance == localPlayerController)
                 HUDPatcher.UpdateUI();
         }

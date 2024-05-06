@@ -371,9 +371,10 @@ namespace ReservedItemSlotCore.Networking
 
         private static void RequestSyncHeldObjects()
         {
-            if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
+            if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer || requestedSyncHeldObjects)
                 return;
 
+            Plugin.Log("Requesting sync held objects from server.");
             requestedSyncHeldObjects = true;
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ReservedItemSlotCore.RequestSyncHeldObjectsServerRpc", NetworkManager.ServerClientId, new FastBufferWriter(0, Allocator.Temp));
         }
@@ -385,50 +386,74 @@ namespace ReservedItemSlotCore.Networking
             if (!NetworkManager.Singleton.IsServer)
                 return;
 
-            int sizePlayerInfos = sizeof(int); // num players
-            int syncPlayerItems = 0;
-            foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
-            {
-                if (playerData.playerController.actualClientId == clientId)
-                    continue;
+            var clientIds = new List<ushort>();
+            var selectedItemSlot = new List<short>();
+            var inventoryIndexes = new Dictionary<ushort, List<short>>();
+            var reservedItemNetworkIds = new Dictionary<ushort, List<ulong>>();
 
-                int numHeldReservedItems = playerData.GetNumHeldReservedItems();
-                if (numHeldReservedItems > 0)
-                {
-                    syncPlayerItems++;
-                    sizePlayerInfos += sizeof(int); // currently selected reserved item index
-                    sizePlayerInfos += sizeof(int); // num held reserved items
-                    sizePlayerInfos += (sizeof(int) + sizeof(ulong)) * numHeldReservedItems; // index in inventory + network reference id
-                }
-            }
-
-            var writer = new FastBufferWriter(sizePlayerInfos, Allocator.Temp);
-            writer.WriteValue(syncPlayerItems);
+            int syncBufferSize = sizeof(short);
 
             foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
             {
-                if (playerData.playerController.actualClientId == clientId)
+                ushort syncClientId = (ushort)playerData.playerController.actualClientId;
+                ushort syncPlayerId = (ushort)playerData.playerController.playerClientId;
+                if (syncClientId == clientId)
                     continue;
 
-                int numHeldReservedItems = playerData.GetNumHeldReservedItems();
-                if (numHeldReservedItems > 0)
+                if (syncClientId == 0 && !playerData.isLocalPlayer)
+                    continue;
+
+                for (short inventoryIndex = (short)playerData.reservedHotbarStartIndex; inventoryIndex < (short)playerData.reservedHotbarEndIndexExcluded; inventoryIndex++)
                 {
-                    writer.WriteValue(playerData.playerController.actualClientId); // ulong
-                    writer.WriteValue(playerData.currentItemSlotIsReserved ? playerData.currentItemSlot - playerData.reservedHotbarStartIndex : -1); // int
-                    writer.WriteValue(numHeldReservedItems); // int
-                    
-                    for (int i = playerData.reservedHotbarStartIndex; i < playerData.reservedHotbarEndIndexExcluded; i++)
+                    short reservedItemSlotIndex = (short)(inventoryIndex - (short)playerData.reservedHotbarStartIndex);
+                    var item = playerData.itemSlots[inventoryIndex];
+                    if (item != null)
                     {
-                        var item = playerData.itemSlots[i];
-                        if (item != null)
+                        if (!inventoryIndexes.ContainsKey(syncPlayerId))
                         {
-                            writer.WriteValue(i - playerData.reservedHotbarStartIndex); // int
-                            writer.WriteValue(item.NetworkObjectId); // ulong
+                            inventoryIndexes.Add(syncPlayerId, new List<short>());
+                            reservedItemNetworkIds.Add(syncPlayerId, new List<ulong>());
                         }
+                        inventoryIndexes[syncPlayerId].Add(reservedItemSlotIndex);
+                        reservedItemNetworkIds[syncPlayerId].Add(item.NetworkObjectId);
                     }
                 }
+
+                if (inventoryIndexes.ContainsKey(syncPlayerId) && inventoryIndexes[syncPlayerId].Count > 0)
+                {
+                    syncBufferSize += sizeof(ushort); // syncClientId
+                    syncBufferSize += sizeof(short); // selected item slot
+                    syncBufferSize += sizeof(short); // num reserved items
+                    syncBufferSize += (sizeof(short) + sizeof(ulong)) * inventoryIndexes[syncPlayerId].Count;
+                    clientIds.Add(syncPlayerId);
+                    selectedItemSlot.Add((short)playerData.currentItemSlot);
+                }
             }
 
+            Plugin.Log("Receiving sync held objects request from client with id: " + clientId + ". " + clientIds.Count + " players are currently holding a reserved item.");
+
+            var writer = new FastBufferWriter(syncBufferSize, Allocator.Temp);
+            writer.WriteValue((short)clientIds.Count);
+
+            for (int i = 0; i < clientIds.Count; i++)
+            {
+                ushort syncClientId = clientIds[i];
+                short selectedReservedItemSlot = selectedItemSlot[i];
+                short numElements = (short)inventoryIndexes[syncClientId].Count;
+
+                writer.WriteValue(syncClientId);
+                writer.WriteValue(selectedReservedItemSlot);
+                writer.WriteValue(numElements);
+
+                for (int j = 0; j < numElements; j++)
+                {
+                    short inventoryIndex = inventoryIndexes[syncClientId][j];
+                    ulong networkObjectId = reservedItemNetworkIds[syncClientId][j];
+                    
+                    writer.WriteValue(inventoryIndex);
+                    writer.WriteValue(networkObjectId);
+                }
+            }
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ReservedItemSlotCore.RequestSyncHeldObjectsClientRpc", clientId, writer, NetworkDelivery.ReliableFragmentedSequenced);
         }
 
@@ -439,32 +464,34 @@ namespace ReservedItemSlotCore.Networking
             if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
                 return;
 
-            reader.ReadValue(out int numPlayersToSyncItems);
+            reader.ReadValue(out short numPlayersToSyncItems);
+            Plugin.Log("Receiving sync held objects from server. Number of players already holding a reserved item: " + numPlayersToSyncItems);
+
             for (int i = 0; i < numPlayersToSyncItems; i++)
             {
-                reader.ReadValue(out ulong syncingClientId);
-                reader.ReadValue(out int selectedReservedItemSlot);
-                reader.ReadValue(out int numHeldReservedItems);
+                reader.ReadValue(out ushort syncPlayerId);
+                reader.ReadValue(out short currentlySelectedItemSlot);
+                reader.ReadValue(out short numHeldReservedItems);
 
-                var playerController = GetPlayerControllerByClientId(syncingClientId);
+                var playerController = GetPlayerControllerByPlayerId(syncPlayerId);
                 ReservedPlayerData playerData = null;
                 if (playerController != null)
                     ReservedPlayerData.allPlayerData.TryGetValue(playerController, out playerData);
 
                 for (int j = 0; j < numHeldReservedItems; j++)
                 {
-                    reader.ReadValue(out int reservedItemSlotIndex);
+                    reader.ReadValue(out short reservedItemSlotIndex);
                     reader.ReadValue(out ulong networkObjectId);
                     var grabbableObject = GetGrabbableObjectByNetworkId(networkObjectId);
 
-                    if (playerData != null && reservedItemSlotIndex >= 0 && reservedItemSlotIndex < SessionManager.numReservedItemSlotsUnlocked && grabbableObject != null)
+                    if (grabbableObject != null && playerData != null && reservedItemSlotIndex >= 0 && reservedItemSlotIndex < SessionManager.numReservedItemSlotsUnlocked)
                     {
                         int indexInInventory = reservedItemSlotIndex + playerData.reservedHotbarStartIndex;
                         grabbableObject.isHeld = true;
                         playerData.itemSlots[indexInInventory] = grabbableObject;
                         grabbableObject.parentObject = playerController.serverItemHolder;
                         grabbableObject.playerHeldBy = playerController;
-                        bool currentlySelected = selectedReservedItemSlot == reservedItemSlotIndex;
+                        bool currentlySelected = currentlySelectedItemSlot == indexInInventory;
 
                         grabbableObject.EnablePhysics(false);
 
@@ -478,9 +505,7 @@ namespace ReservedItemSlotCore.Networking
                             playerController.currentItemSlot = indexInInventory;
                         }
                         else
-                        {
                             grabbableObject.PocketItem();
-                        }
                     }
                 }
             }
@@ -671,6 +696,18 @@ namespace ReservedItemSlotCore.Networking
             {
                 var playerController = StartOfRound.Instance.allPlayerScripts[i];
                 if (playerController.actualClientId == clientId)
+                    return playerController;
+            }
+            return null;
+        }
+
+
+        internal static PlayerControllerB GetPlayerControllerByPlayerId(ulong playerId)
+        {
+            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+            {
+                var playerController = StartOfRound.Instance.allPlayerScripts[i];
+                if (playerController.playerClientId == playerId)
                     return playerController;
             }
             return null;

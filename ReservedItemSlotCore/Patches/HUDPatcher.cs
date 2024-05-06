@@ -40,6 +40,7 @@ namespace ReservedItemSlotCore.Patches
         private static float largestPositionDifference = 0;
 
         private static bool currentApplyHotbarPlusFormatting;
+        private static bool currentHideEmptySlots;
 
 
         [HarmonyPatch(typeof(HUDManager), "Awake")]
@@ -238,6 +239,7 @@ namespace ReservedItemSlotCore.Patches
             }
 
             currentApplyHotbarPlusFormatting = ConfigSettings.applyHotbarPlusFormatting.Value;
+            currentHideEmptySlots = ConfigSettings.hideEmptyReservedItemSlots.Value;
         }
 
 
@@ -285,7 +287,7 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPostfix]
         public static void OnCloseQuickMenu()
         {
-            if (HotbarPlus_Compat.Enabled && currentApplyHotbarPlusFormatting != ConfigSettings.applyHotbarPlusFormatting.Value)
+            if ((HotbarPlus_Compat.Enabled && currentApplyHotbarPlusFormatting != ConfigSettings.applyHotbarPlusFormatting.Value) || currentHideEmptySlots != ConfigSettings.hideEmptyReservedItemSlots.Value)
                 UpdateUI();
         }
     }
