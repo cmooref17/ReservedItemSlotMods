@@ -16,7 +16,7 @@ using ReservedFlashlightSlot.Config;
 
 namespace ReservedFlashlightSlot
 {
-    [BepInPlugin("FlipMods.ReservedFlashlightSlot", "ReservedFlashlightSlot", "2.0.3")]
+    [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     [BepInDependency("FlipMods.ReservedItemSlotCore", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
@@ -41,9 +41,9 @@ namespace ReservedFlashlightSlot
             CreateReservedItemSlots();
             CreateAdditionalReservedItemSlots();
 
-            _harmony = new Harmony("ReservedFlashlightSlot");
+            _harmony = new Harmony(PluginInfo.PLUGIN_NAME);
 			PatchAll();
-			Log("ReservedFlashlightSlot loaded");
+			Log(PluginInfo.PLUGIN_NAME + " loaded");
 		}
 
 

@@ -72,8 +72,7 @@ namespace ReservedFlashlightSlot.Input
             if (localPlayerController == null || !localPlayerController.isPlayerControlled || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
                 return;
 
-            FlashlightItem mainFlashlight = FlashlightPatcher.GetMainFlashlight(localPlayerController);
-            if (!context.performed || mainFlashlight == null || ShipBuildModeManager.Instance.InBuildMode || localPlayerController.inTerminalMenu)
+            if (!context.performed || ShipBuildModeManager.Instance.InBuildMode || localPlayerController.inTerminalMenu)
                 return;
 
             if (ReservedPlayerData.localPlayerData.timeSinceSwitchingSlots < 0.075f)
@@ -82,7 +81,19 @@ namespace ReservedFlashlightSlot.Input
             if (localPlayerController.isTypingChat || localPlayerController.inTerminalMenu || localPlayerController.quickMenuManager.isMenuOpen || localPlayerController.isPlayerDead || localPlayerController.isGrabbingObjectAnimation || ReservedPlayerData.localPlayerData.isGrabbingReservedItem)
                 return;
 
-            mainFlashlight.UseItemOnClient(!mainFlashlight.isBeingUsed);
+            FlashlightItem mainFlashlight = FlashlightPatcher.GetMainFlashlight(localPlayerController);
+            if (!mainFlashlight)
+            {
+                mainFlashlight = FlashlightPatcher.GetFirstFlashlightItem(localPlayerController);
+                if (!mainFlashlight)
+                    return;
+            }
+
+            bool activate = !mainFlashlight.isBeingUsed;
+            if (activate && mainFlashlight != FlashlightPatcher.GetCurrentlySelectedFlashlight(localPlayerController))
+                localPlayerController.pocketedFlashlight = mainFlashlight;
+
+            mainFlashlight.UseItemOnClient(activate);
             Traverse.Create(localPlayerController).Field("timeSinceSwitchingSlots").SetValue(0);
         }
     }
