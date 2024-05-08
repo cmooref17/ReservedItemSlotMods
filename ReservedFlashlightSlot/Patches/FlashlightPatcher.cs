@@ -10,6 +10,7 @@ using UnityEngine.InputSystem;
 using ReservedItemSlotCore;
 using ReservedItemSlotCore.Data;
 using System;
+using System.Diagnostics.Eventing.Reader;
 
 namespace ReservedFlashlightSlot.Patches
 {
@@ -34,23 +35,73 @@ namespace ReservedFlashlightSlot.Patches
         public static FlashlightItem GetFirstFlashlightItem(PlayerControllerB playerController) { foreach (var item in playerController.ItemSlots) { if (item != null && item is FlashlightItem flashlightItem) return flashlightItem; } return null; }
 
 
-        [HarmonyPatch(typeof(FlashlightItem), "EquipItem")]
+        [HarmonyPatch(typeof(FlashlightItem), "PocketItem")]
         [HarmonyPostfix]
-        public static void OnEquipFlashlight(FlashlightItem __instance)
+        private static void OnPocketFlashlight(FlashlightItem __instance)
         {
-            var heldByPlayer = __instance?.playerHeldBy;
-            if (!heldByPlayer)
+            OnPocketFlashlightLocal(__instance);
+        }
+
+
+        [HarmonyPatch(typeof(FlashlightItem), "PocketFlashlightClientRpc")]
+        [HarmonyPostfix]
+        private static void OnPocketFlashlightClientRpc(bool stillUsingFlashlight, FlashlightItem __instance)
+        {
+            var playerHeldBy = __instance?.playerHeldBy;
+            if (!playerHeldBy || playerHeldBy == localPlayerController)
                 return;
 
-            var pocketedFlashlight = heldByPlayer.pocketedFlashlight as FlashlightItem;
-            if (!__instance.isBeingUsed && pocketedFlashlight != null && pocketedFlashlight != __instance && pocketedFlashlight.isBeingUsed)
-                UpdateFlashlightState(pocketedFlashlight, true);
+            if (NetworkManager.Singleton.IsClient && (int)Traverse.Create(__instance).Field("__rpc_exec_stage").GetValue() == 2)
+                OnPocketFlashlightLocal(__instance);
+        }
+
+
+        private static void OnPocketFlashlightLocal(FlashlightItem flashlightItem)
+        {
+            var playerHeldBy = flashlightItem?.playerHeldBy;
+            if (!playerHeldBy)
+                return;
+
+            var pocketedFlashlight = playerHeldBy.pocketedFlashlight as FlashlightItem;
+            if (flashlightItem.isBeingUsed)
+            {
+                UpdateFlashlightState(flashlightItem, true);
+                if (pocketedFlashlight && pocketedFlashlight != flashlightItem)
+                    UpdateFlashlightState(pocketedFlashlight, false);
+                playerHeldBy.pocketedFlashlight = flashlightItem;
+            }
+        }
+
+
+        [HarmonyPatch(typeof(FlashlightItem), "EquipItem")]
+        [HarmonyPostfix]
+        private static void OnEquipFlashlight(FlashlightItem __instance)
+        {
+            var playerHeldBy = __instance?.playerHeldBy;
+            if (!playerHeldBy)
+                return;
+
+            var pocketedFlashlight = playerHeldBy.pocketedFlashlight as FlashlightItem;
+            if (__instance != pocketedFlashlight)
+            {
+                if (__instance.isBeingUsed)
+                {
+                    UpdateFlashlightState(__instance, true);
+                    if (pocketedFlashlight)
+                        UpdateFlashlightState(pocketedFlashlight, false);
+                }
+                else if (pocketedFlashlight && pocketedFlashlight.isBeingUsed)
+                {
+                    UpdateFlashlightState(pocketedFlashlight, true);
+                    UpdateFlashlightState(__instance, false);
+                }
+            }
         }
 
 
         [HarmonyPatch(typeof(FlashlightItem), "DiscardItem")]
         [HarmonyPostfix]
-        public static void ResetPocketedFlashlightPost(FlashlightItem __instance)
+        private static void ResetPocketedFlashlightPost(FlashlightItem __instance)
         {
             if (!__instance)
                 return;
@@ -91,58 +142,40 @@ namespace ReservedFlashlightSlot.Patches
 
         [HarmonyPatch(typeof(FlashlightItem), "SwitchFlashlight")]
         [HarmonyPostfix]
-        public static void OnToggleFlashlight(bool on, FlashlightItem __instance)
+        private static void OnToggleFlashlight(bool on, FlashlightItem __instance)
         {
-            var heldByPlayer = __instance?.playerHeldBy;
-            Plugin.LogWarning("HeldByPlayer? " + (heldByPlayer == null ? "NO" : "YES IsBeingUsed: " + __instance.isBeingUsed));
-            if (!heldByPlayer/* || __instance == heldByPlayer.pocketedFlashlight*/)
+            var playerHeldBy = __instance?.playerHeldBy;
+            if (!playerHeldBy)
                 return;
 
-            int indexInInventory = Array.IndexOf(heldByPlayer.ItemSlots, __instance);
-            Plugin.LogWarning("Switching flashlight at index: " + indexInInventory + " On: " + on + " IsBeingUsed: " + __instance.isBeingUsed);
-
-            var pocketedFlashlight = heldByPlayer.pocketedFlashlight as FlashlightItem;
+            var pocketedFlashlight = playerHeldBy.pocketedFlashlight as FlashlightItem;
             if (!__instance.isBeingUsed)
             {
                 if (__instance == pocketedFlashlight)
-                    heldByPlayer.pocketedFlashlight = null;
+                    playerHeldBy.pocketedFlashlight = null;
                 return;
             }
             else
-                Traverse.Create(__instance).Field("previousPlayerHeldBy").SetValue(heldByPlayer);
+                Traverse.Create(__instance).Field("previousPlayerHeldBy").SetValue(playerHeldBy);
 
-            Plugin.LogWarning("NotCurrentlySelectedFlashlight");
             if (pocketedFlashlight != null && pocketedFlashlight != __instance)
             {
                 if (pocketedFlashlight.isBeingUsed)
                 {
-                    Plugin.LogWarning("Deactivate Pocketed Flashlight");
                     pocketedFlashlight.SwitchFlashlight(false);
                     UpdateFlashlightState(pocketedFlashlight, false);
                 }
-                heldByPlayer.pocketedFlashlight = null;
+                playerHeldBy.pocketedFlashlight = null;
             }
 
-            if (__instance != GetCurrentlySelectedFlashlight(heldByPlayer))
-            {
-                Plugin.LogWarning("Activate Flashlight");
-                heldByPlayer.pocketedFlashlight = __instance;
-                UpdateFlashlightState(__instance, true);
-            }
+            if (__instance != GetCurrentlySelectedFlashlight(playerHeldBy))
+                playerHeldBy.pocketedFlashlight = __instance;
 
-            //UpdateAllFlashlightStates(heldByPlayer, true);
-            /*{
-                if (__instance.playerHeldBy != null && __instance != __instance.playerHeldBy.ItemSlots[__instance.playerHeldBy.currentItemSlot])
-                {
-                    if (__instance.playerHeldBy.pocketedFlashlight != null && __instance.playerHeldBy.pocketedFlashlight != __instance && __instance.playerHeldBy.pocketedFlashlight.isBeingUsed)
-                        ((FlashlightItem)__instance.playerHeldBy.pocketedFlashlight).SwitchFlashlight(false);
-                    __instance.playerHeldBy.pocketedFlashlight = __instance;
-                }
-            }*/
+            UpdateFlashlightState(__instance, true);
         }
 
 
-        internal static void UpdateAllFlashlightStates(PlayerControllerB playerController, bool mainFlashlightActive = true)
+        /*internal static void UpdateAllFlashlightStates(PlayerControllerB playerController, bool mainFlashlightActive = true)
         {
             FlashlightItem mainFlashlight = GetMainFlashlight(playerController);
             if (mainFlashlight == null)
@@ -159,24 +192,27 @@ namespace ReservedFlashlightSlot.Patches
                 if (flashlight != null)
                     UpdateFlashlightState(flashlight, flashlight == mainFlashlight && mainFlashlightActive);
             }
-        }
+        }*/
 
 
         internal static void UpdateFlashlightState(FlashlightItem flashlightItem, bool active)
         {
-            var heldByPlayer = flashlightItem?.playerHeldBy;
-            if (!heldByPlayer)
+            var playerHeldBy = flashlightItem?.playerHeldBy;
+            if (!playerHeldBy)
                 return;
 
             flashlightItem.isBeingUsed = active;
-            bool useFlashlightLight = heldByPlayer != localPlayerController || flashlightItem == GetCurrentlySelectedFlashlight(heldByPlayer);
+            bool isLocalPlayer = playerHeldBy == localPlayerController;
+            bool isCurrentlySelected = flashlightItem == GetCurrentlySelectedFlashlight(playerHeldBy);
+            bool useFlashlightLight = flashlightItem == GetCurrentlySelectedFlashlight(playerHeldBy) || (playerHeldBy != localPlayerController && flashlightItem == GetReservedFlashlight(playerHeldBy));
+            Plugin.LogWarning("IsLocalPlayer: " + isLocalPlayer + " IsCurrentlySelected: " + isCurrentlySelected + " UseFlashlightLight: " + useFlashlightLight);
 
             flashlightItem.flashlightBulb.enabled = active && useFlashlightLight;
             flashlightItem.flashlightBulbGlow.enabled = active && useFlashlightLight;
             flashlightItem.usingPlayerHelmetLight = active && !useFlashlightLight;
-            heldByPlayer.helmetLight.enabled = active && !useFlashlightLight;
-            if (heldByPlayer.helmetLight.enabled)
-                heldByPlayer.ChangeHelmetLight(flashlightItem.flashlightTypeID);
+            playerHeldBy.helmetLight.enabled = active && !useFlashlightLight;
+            if (playerHeldBy.helmetLight.enabled)
+                playerHeldBy.ChangeHelmetLight(flashlightItem.flashlightTypeID);
         }
     }
 }
