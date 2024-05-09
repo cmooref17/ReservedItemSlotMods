@@ -35,6 +35,8 @@ namespace ReservedFlashlightSlot.Patches
         public static FlashlightItem GetFirstFlashlightItem(PlayerControllerB playerController) { foreach (var item in playerController.ItemSlots) { if (item != null && item is FlashlightItem flashlightItem) return flashlightItem; } return null; }
 
 
+
+
         [HarmonyPatch(typeof(FlashlightItem), "PocketItem")]
         [HarmonyPostfix]
         private static void OnPocketFlashlight(FlashlightItem __instance)
@@ -65,9 +67,9 @@ namespace ReservedFlashlightSlot.Patches
             var pocketedFlashlight = playerHeldBy.pocketedFlashlight as FlashlightItem;
             if (flashlightItem.isBeingUsed)
             {
-                UpdateFlashlightState(flashlightItem, true);
                 if (pocketedFlashlight && pocketedFlashlight != flashlightItem)
                     UpdateFlashlightState(pocketedFlashlight, false);
+                UpdateFlashlightState(flashlightItem, true);
                 playerHeldBy.pocketedFlashlight = flashlightItem;
             }
         }
@@ -92,8 +94,8 @@ namespace ReservedFlashlightSlot.Patches
                 }
                 else if (pocketedFlashlight && pocketedFlashlight.isBeingUsed)
                 {
-                    UpdateFlashlightState(pocketedFlashlight, true);
                     UpdateFlashlightState(__instance, false);
+                    UpdateFlashlightState(pocketedFlashlight, true);
                 }
             }
         }
@@ -202,17 +204,17 @@ namespace ReservedFlashlightSlot.Patches
                 return;
 
             flashlightItem.isBeingUsed = active;
-            bool isLocalPlayer = playerHeldBy == localPlayerController;
-            bool isCurrentlySelected = flashlightItem == GetCurrentlySelectedFlashlight(playerHeldBy);
-            bool useFlashlightLight = flashlightItem == GetCurrentlySelectedFlashlight(playerHeldBy) || (playerHeldBy != localPlayerController && flashlightItem == GetReservedFlashlight(playerHeldBy));
-            Plugin.LogWarning("IsLocalPlayer: " + isLocalPlayer + " IsCurrentlySelected: " + isCurrentlySelected + " UseFlashlightLight: " + useFlashlightLight);
+            bool useFlashlightLight = active && (flashlightItem == GetCurrentlySelectedFlashlight(playerHeldBy) || (playerHeldBy != localPlayerController && flashlightItem == GetReservedFlashlight(playerHeldBy)));
+            bool useHelmetLight = active && !useFlashlightLight;
 
-            flashlightItem.flashlightBulb.enabled = active && useFlashlightLight;
-            flashlightItem.flashlightBulbGlow.enabled = active && useFlashlightLight;
-            flashlightItem.usingPlayerHelmetLight = active && !useFlashlightLight;
-            playerHeldBy.helmetLight.enabled = active && !useFlashlightLight;
-            if (playerHeldBy.helmetLight.enabled)
+            flashlightItem.flashlightBulb.enabled = useFlashlightLight;
+            flashlightItem.flashlightBulbGlow.enabled = useFlashlightLight;
+            flashlightItem.usingPlayerHelmetLight = useHelmetLight;
+            playerHeldBy.helmetLight.enabled = useHelmetLight;
+            if (useHelmetLight)
                 playerHeldBy.ChangeHelmetLight(flashlightItem.flashlightTypeID);
+
+            flashlightItem.flashlightMesh.sharedMaterials[1] = useFlashlightLight ? flashlightItem.bulbLight : flashlightItem.bulbDark;
         }
     }
 }
