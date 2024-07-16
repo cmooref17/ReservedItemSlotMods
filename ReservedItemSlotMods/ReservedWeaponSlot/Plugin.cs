@@ -15,7 +15,7 @@ using ReservedWeaponSlot.Config;
 
 namespace ReservedWeaponSlot
 {
-    [BepInPlugin("FlipMods.ReservedWeaponSlot", "ReservedWeaponSlot", "1.1.3")]
+    [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     [BepInDependency("FlipMods.ReservedItemSlotCore", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
@@ -26,7 +26,8 @@ namespace ReservedWeaponSlot
 
         public static ReservedItemSlotData weaponSlotData;
         public static ReservedItemSlotData rangedWeaponSlotData;
-        public static ReservedItemSlotData ammoSlotData;
+        public static ReservedItemSlotData mainAmmoSlotData;
+        public static List<ReservedItemSlotData> allAmmoSlotData = new List<ReservedItemSlotData>();
 
         public static ReservedItemData shotgunData;
         public static ReservedItemData zapGunData;
@@ -34,6 +35,7 @@ namespace ReservedWeaponSlot
 		public static ReservedItemData shovelData;
 		public static ReservedItemData stopSignData;
 		public static ReservedItemData yieldSignData;
+		public static ReservedItemData kitchenKnifeData;
 
         //public static ReservedItemData stunGrenadeData;// = new ReservedItemData("Stun grenade", 70);
         //public static ReservedItemData homemadeFlashbangData;// = new ReservedItemData("Homemade flashbang", 70);
@@ -41,8 +43,8 @@ namespace ReservedWeaponSlot
         public static ReservedItemData rocketLauncherData;
         public static ReservedItemData flareGunData;
         public static ReservedItemData toyGunData;
-		public static ReservedItemData toyHammerData;
 
+		public static ReservedItemData toyHammerData;
         public static ReservedItemData goldenShovelData;
 
         public static ReservedItemData ammoData;
@@ -52,7 +54,7 @@ namespace ReservedWeaponSlot
 
         public static List<ReservedItemData> additionalItemData = new List<ReservedItemData>();
 
-        void Awake()
+        private void Awake()
         {
             instance = this;
             CreateCustomLogger();
@@ -61,13 +63,13 @@ namespace ReservedWeaponSlot
             CreateReservedItemSlots();
             CreateAdditionalReservedItemSlots();
 
-            _harmony = new Harmony("ReservedWeaponSlot");
+            _harmony = new Harmony(PluginInfo.PLUGIN_NAME);
             PatchAll();
-            Log("ReservedWeaponSlot loaded");
+            Log(PluginInfo.PLUGIN_NAME + " loaded");
         }
 
 
-        void CreateReservedItemSlots()
+        private void CreateReservedItemSlots()
         {
             weaponSlotData = ReservedItemSlotData.CreateReservedItemSlotData("weapons", ConfigSettings.overrideMeleeSlotPriority.Value, ConfigSettings.overrideMeleeSlotPrice.Value);
             
@@ -85,9 +87,9 @@ namespace ReservedWeaponSlot
             shovelData = weaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Shovel"));
             stopSignData = weaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Stop sign"));
             yieldSignData = weaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Yield sign"));
-            toyGunData = weaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Toy Hammer"));
+            kitchenKnifeData = weaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Kitchen knife"));
+            toyHammerData = weaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Toy Hammer"));
             goldenShovelData = weaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Australium Shovel"));
-
 
             shotgunData = rangedWeaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Shotgun"));
             zapGunData = rangedWeaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Zap gun"));
@@ -95,19 +97,41 @@ namespace ReservedWeaponSlot
             flareGunData = rangedWeaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Flaregun"));
             toyGunData = rangedWeaponSlotData.AddItemToReservedItemSlot(new ReservedItemData("Revolver"));
             
-
-            ammoSlotData = null;
+            mainAmmoSlotData = null;
             if (!ConfigSettings.disableReservedAmmoSlot.Value)
             {
+                for (int i = 0; i < ConfigSettings.numAmmoSlots.Value && ConfigSettings.overrideAmmoSlotPriority.Value - i < 0; i++)
+                {
+                    string slotName = "ammo" + (i > 0 ? (i + 1).ToString() : "");
+                    var ammoSlotData = ReservedItemSlotData.CreateReservedItemSlotData(slotName, ConfigSettings.overrideAmmoSlotPriority.Value - i, Mathf.Max(ConfigSettings.overrideAmmoSlotPrice.Value + ConfigSettings.overrideExtraAmmoSlotPriceIncrease.Value * i, 0));
+                    if (mainAmmoSlotData == null)
+                        mainAmmoSlotData = ammoSlotData;
+
+                    if (ammoData == null)
+                    {
+                        ammoData = ammoSlotData.AddItemToReservedItemSlot(new ReservedItemData("Ammo"));
+                        shotgunAmmoData = ammoSlotData.AddItemToReservedItemSlot(new ReservedItemData("Shells"));
+                        flareGunAmmoData = ammoSlotData.AddItemToReservedItemSlot(new ReservedItemData("Emergency Flare (ammo)"));
+                    }
+                    else
+                    {
+                        ammoSlotData.AddItemToReservedItemSlot(ammoData);
+                        ammoSlotData.AddItemToReservedItemSlot(shotgunAmmoData);
+                        ammoSlotData.AddItemToReservedItemSlot(flareGunAmmoData);
+                    }
+                    allAmmoSlotData.Add(ammoSlotData);
+                }
+                /*
                 ammoSlotData = ReservedItemSlotData.CreateReservedItemSlotData("ammo", ConfigSettings.overrideAmmoSlotPriority.Value, ConfigSettings.overrideAmmoSlotPrice.Value);
                 ammoData = ammoSlotData.AddItemToReservedItemSlot(new ReservedItemData("Ammo"));
                 shotgunAmmoData = ammoSlotData.AddItemToReservedItemSlot(new ReservedItemData("Shells"));
                 flareGunAmmoData = ammoSlotData.AddItemToReservedItemSlot(new ReservedItemData("Emergency Flare (ammo)"));
+                */
             }
         }
 
 
-        void CreateAdditionalReservedItemSlots()
+        private void CreateAdditionalReservedItemSlots()
         {
             string[] additionalItemNames = ConfigSettings.ParseAdditionalMeleeWeaponItems();
             foreach (string itemName in additionalItemNames)
@@ -138,12 +162,16 @@ namespace ReservedWeaponSlot
                 additionalItemNames = ConfigSettings.ParseAdditionalAmmoItems();
                 foreach (string itemName in additionalItemNames)
                 {
-                    if (!ammoSlotData.ContainsItem(itemName))
+                    if (!mainAmmoSlotData.ContainsItem(itemName))
                     {
                         LogWarning("Adding additional item to reserved (ammo) item slot. Item: " + itemName);
                         var itemData = new ReservedItemData(itemName);
                         additionalItemData.Add(itemData);
-                        ammoSlotData.AddItemToReservedItemSlot(itemData);
+                        foreach (var slotData in allAmmoSlotData)
+                        {
+                            if (!slotData.ContainsItem(itemName))
+                                slotData.AddItemToReservedItemSlot(itemData);
+                        }
                     }
                 }
             }
@@ -174,17 +202,18 @@ namespace ReservedWeaponSlot
                 removeItemNames = ConfigSettings.ParseRemoveAmmoItems();
                 foreach (string itemName in removeItemNames)
                 {
-                    if (ammoSlotData.ContainsItem(itemName))
+                    LogWarning("Removing item from reserved (ammo) item slot. Item: " + itemName);
+                    foreach (var slotData in allAmmoSlotData)
                     {
-                        LogWarning("Removing item from reserved (ammo) item slot. Item: " + itemName);
-                        ammoSlotData.RemoveItemFromReservedItemSlot(itemName);
+                        if (slotData.ContainsItem(itemName))
+                            slotData.RemoveItemFromReservedItemSlot(itemName);
                     }
                 }
             }
         }
 
 
-        void PatchAll()
+        private void PatchAll()
         {
             IEnumerable<Type> types;
             try { types = Assembly.GetExecutingAssembly().GetTypes(); }
@@ -194,7 +223,7 @@ namespace ReservedWeaponSlot
         }
 
 
-        void CreateCustomLogger()
+        private void CreateCustomLogger()
         {
             try { logger = BepInEx.Logging.Logger.CreateLogSource(string.Format("{0}-{1}", Info.Metadata.Name, Info.Metadata.Version)); }
             catch { logger = Logger; }

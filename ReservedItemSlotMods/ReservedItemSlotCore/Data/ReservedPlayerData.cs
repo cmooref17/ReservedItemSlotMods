@@ -71,6 +71,8 @@ namespace ReservedItemSlotCore.Data
             int indexInInventory = itemSlotData.GetIndexInInventory(this);
             if (indexInInventory < reservedHotbarStartIndex || indexInInventory >= reservedHotbarEndIndexExcluded)
                 return null;
+            if (indexInInventory < 0 || indexInInventory >= playerController.ItemSlots.Length)
+                return null;
             return itemSlots[indexInInventory];
         }
 

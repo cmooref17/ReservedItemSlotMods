@@ -75,13 +75,18 @@ namespace ReservedItemSlotCore.Patches
                 return;
             }
 
-            for (int i = playerData.reservedHotbarStartIndex; i < playerData.reservedHotbarEndIndexExcluded; i++)
+            for (int i = playerData.reservedHotbarStartIndex; i < Mathf.Min(playerData.reservedHotbarEndIndexExcluded, playerData.playerController.ItemSlots.Length); i++)
             {
                 GrabbableObject heldItem = playerData.playerController.ItemSlots[i];
                 if (heldItem == null)
                     continue;
 
                 int reservedItemIndex = i - playerData.reservedHotbarStartIndex;
+                if (reservedItemIndex < 0 || reservedItemIndex >= SessionManager.unlockedReservedItemSlots.Count)
+                {
+                    Plugin.LogWarning("Failed to add reserved item to MaskedEnemy. Could not get ReservedItemSlot at index: " + reservedItemIndex + " Item: " + heldItem.itemProperties.itemName + " SlotIndexInInventory: " + i + " ReservedHotbarStartIndex: " + playerData.reservedHotbarStartIndex);
+                    continue;
+                }
                 var reservedItemSlot = SessionManager.unlockedReservedItemSlots[reservedItemIndex];
                 var reservedItem = reservedItemSlot.GetReservedItemData(heldItem);
                 if (reservedItem.holsteredParentBone == PlayerBone.None)

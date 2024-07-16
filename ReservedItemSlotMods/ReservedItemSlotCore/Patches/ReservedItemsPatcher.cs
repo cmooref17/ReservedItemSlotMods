@@ -22,7 +22,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(GrabbableObject), "PocketItem")]
         [HarmonyPostfix]
-        public static void OnPocketReservedItem(GrabbableObject __instance)
+        private static void OnPocketReservedItem(GrabbableObject __instance)
         {
             if (!ConfigSettings.showReservedItemsHolstered.Value)
                 return;
@@ -48,7 +48,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(GrabbableObject), "EquipItem")]
         [HarmonyPostfix]
-        public static void OnEquipReservedItem(GrabbableObject __instance)
+        private static void OnEquipReservedItem(GrabbableObject __instance)
         {
             if (!ConfigSettings.showReservedItemsHolstered.Value)
                 return;
@@ -73,7 +73,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(GrabbableObject), "DiscardItem")]
         [HarmonyPostfix]
-        public static void ResetReservedItemLayer(GrabbableObject __instance)
+        private static void ResetReservedItemLayer(GrabbableObject __instance)
         {
             if (SessionManager.TryGetUnlockedItemData(__instance, out var itemData) && itemData.showOnPlayerWhileHolstered)
             {
@@ -88,7 +88,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(GrabbableObject), "LateUpdate")]
         [HarmonyPostfix]
-        public static void SetHolsteredPositionRotation(GrabbableObject __instance)
+        private static void SetHolsteredPositionRotation(GrabbableObject __instance)
         {
             if (!ConfigSettings.showReservedItemsHolstered.Value)
                 return;
@@ -110,7 +110,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(GrabbableObject), "EnableItemMeshes")]
         [HarmonyPrefix]
-        public static void OnEnableItemMeshes(ref bool enable, GrabbableObject __instance)
+        private static void OnEnableItemMeshes(ref bool enable, GrabbableObject __instance)
         {
             if (!ConfigSettings.showReservedItemsHolstered.Value)
                 return;

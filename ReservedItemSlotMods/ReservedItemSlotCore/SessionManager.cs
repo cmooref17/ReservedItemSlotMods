@@ -12,6 +12,7 @@ using ReservedItemSlotCore.Networking;
 using Unity.Netcode;
 using UnityEngine.Diagnostics;
 using GameNetcodeStuff;
+using ReservedItemSlotCore.Config;
 
 namespace ReservedItemSlotCore
 {
@@ -48,26 +49,35 @@ namespace ReservedItemSlotCore
             pendingUnlockedReservedItemSlots.Clear();
             pendingUnlockedReservedItemSlotsDict.Clear();
             allReservedItemData.Clear();
+            gameStarted = false;
         }
 
-/*
+
         [HarmonyPatch(typeof(StartOfRound), "ResetPlayersLoadedValueClientRpc")]
         [HarmonyPostfix]
         private static void OnStartGame(StartOfRound __instance, bool landingShip = false)
         {
-            if (!SyncManager.isSynced && SyncManager.canUseModDisabledOnHost)
+            if (gameStarted || !NetworkManager.Singleton.IsClient)
+                return;
+
+            if (!SyncManager.hostHasMod && SyncManager.canUseModDisabledOnHost)
             {
+                Plugin.LogWarning("Starting game while host does not have this mod, and ForceEnableReservedItemSlots is enabled in the config. Unlocking: " + ReservedItemSlotData.allReservedItemSlotData.Count + " slots. THIS MAY NOT BE STABLE");
+                SyncManager.isSynced = true;
                 SyncManager.enablePurchasingItemSlots = false;
                 ReservedPlayerData.localPlayerData.reservedHotbarStartIndex = ReservedPlayerData.localPlayerData.itemSlots.Length;
-                foreach (var reservedItemSlotData in Plugin.customItemSlots)
+                foreach (var reservedItemSlotData in ReservedItemSlotData.allReservedItemSlotData.Values)
                 {
                     SyncManager.AddReservedItemSlotData(reservedItemSlotData);
                     UnlockReservedItemSlot(reservedItemSlotData);
                 }
+                pendingUnlockedReservedItemSlots?.Clear();
+                pendingUnlockedReservedItemSlotsDict?.Clear();
                 SyncManager.UpdateReservedItemsList();
             }
+            gameStarted = true;
         }
-*/
+
 
         /// <summary>
         /// Unlocks the specified reserved item slot for the local client.
@@ -75,6 +85,9 @@ namespace ReservedItemSlotCore
         /// <param name="itemSlotData"></param>
         public static void UnlockReservedItemSlot(ReservedItemSlotData itemSlotData)
         {
+            if (itemSlotData == null)
+                return;
+
             Plugin.Log("Unlocking reserved item slot: " + itemSlotData.slotName);
             if (!SyncManager.isSynced)
             {
@@ -205,6 +218,12 @@ namespace ReservedItemSlotCore
         {
             if (SyncManager.enablePurchasingItemSlots)
                 ResetProgress();
+            else if (!SyncManager.hostHasMod && SyncManager.canUseModDisabledOnHost)
+            {
+                SyncManager.isSynced = false;
+                ResetProgress(true);
+            }
+            gameStarted = false;
         }
 
 
@@ -230,6 +249,8 @@ namespace ReservedItemSlotCore
         {
             if (!SyncManager.enablePurchasingItemSlots && !force)
                 return;
+
+            Plugin.Log("Resetting progress.");
 
             foreach (var playerData in ReservedPlayerData.allPlayerData.Values)
             {
@@ -278,6 +299,9 @@ namespace ReservedItemSlotCore
                 if (reservedItemSlot.purchasePrice <= 0)
                     UnlockReservedItemSlot(reservedItemSlot);
             }
+            if (SyncManager.hostHasMod)
+            {
+            }
 
             HUDPatcher.OnUpdateReservedItemSlots();
 
@@ -318,14 +342,17 @@ namespace ReservedItemSlotCore
 
             string[] unlockedItemSlots = ES3.Load("ReservedItemSlots.UnlockedItemSlots", GameNetworkManager.Instance.currentSaveFileName, new string[0]);
             Plugin.LogWarning("Loading " + unlockedItemSlots.Length + " unlocked reserved item slots.");
+            int numItemsLoaded = 0;
             foreach (var itemSlotName in unlockedItemSlots)
             {
                 if (SyncManager.unlockableReservedItemSlotsDict.TryGetValue(itemSlotName, out var reservedItemSlot))
                 {
+                    numItemsLoaded++;
                     UnlockReservedItemSlot(reservedItemSlot);
                     SyncManager.SendUnlockItemSlotToClients(reservedItemSlot.slotId);
                 }
             }
+            Plugin.Log("Loaded " + numItemsLoaded + " unlocked reserved items.");
         }
 
 

@@ -4,6 +4,7 @@ using HarmonyLib;
 using ReservedItemSlotCore.Data;
 using ReservedItemSlotCore.Input;
 using ReservedItemSlotCore.Networking;
+using ReservedItemSlotCore.Config;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,6 +23,7 @@ namespace ReservedItemSlotCore.Patches
     {
         private static PlayerControllerB localPlayerController { get { return StartOfRound.Instance?.localPlayerController; } }
         private static HashSet<PlayerControllerB> playersDiscardingItems = new HashSet<PlayerControllerB>();
+        private static float timeLoggedPreventedScroll = 0;
 
 
         [HarmonyPatch(typeof(PlayerControllerB), "SetObjectAsNoLongerHeld")]
@@ -90,21 +92,32 @@ namespace ReservedItemSlotCore.Patches
 
         private static IEnumerator SwitchToItemSlotAfterDelay(PlayerControllerB playerController, int slot)
         {
+            float time = Time.time;
             if (playerController == localPlayerController)
-                yield return new WaitUntil(() => playerController.currentlyHeldObjectServer == null);
+                yield return new WaitUntil(() => playerController.currentlyHeldObjectServer == null || Time.time - time >= 5);
             yield return new WaitForEndOfFrame();
+
             playersDiscardingItems.Remove(playerController);
-            if (playerController.currentItemSlot != slot && ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData))
+            if (playerController.currentItemSlot != slot && Time.time - time < 3 && ReservedPlayerData.allPlayerData.TryGetValue(playerController, out var playerData))
                 playerData.CallSwitchToItemSlot(slot);
         }
 
 
         [HarmonyPatch(typeof(PlayerControllerB), "ScrollMouse_performed")]
         [HarmonyPrefix]
-        public static bool PreventItemSwappingDroppingItem(InputAction.CallbackContext context, PlayerControllerB __instance)
+        private static bool PreventItemSwappingDroppingItem(InputAction.CallbackContext context, PlayerControllerB __instance)
         {
             if (__instance == localPlayerController && playersDiscardingItems.Contains(__instance))
+            {
+                float time = Time.time;
+                if (ConfigSettings.verboseLogs.Value && time - timeLoggedPreventedScroll > 1)
+                {
+                    timeLoggedPreventedScroll = time;
+                    Plugin.LogWarning("[VERBOSE] Prevented item swap. Player is currently discarding an item? This should be fine, unless these logs are spamming.");
+                }
                 return false;
+            }
+
             return true;
         }
     }

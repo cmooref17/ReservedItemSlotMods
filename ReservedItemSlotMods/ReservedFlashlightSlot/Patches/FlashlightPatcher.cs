@@ -214,7 +214,11 @@ namespace ReservedFlashlightSlot.Patches
             if (useHelmetLight)
                 playerHeldBy.ChangeHelmetLight(flashlightItem.flashlightTypeID);
 
-            flashlightItem.flashlightMesh.sharedMaterials[1] = useFlashlightLight ? flashlightItem.bulbLight : flashlightItem.bulbDark;
+            if (flashlightItem.changeMaterial)
+            {
+                try { flashlightItem.flashlightMesh.sharedMaterials[1] = useFlashlightLight ? flashlightItem.bulbLight : flashlightItem.bulbDark; }
+                catch { }
+            }
         }
     }
 }

@@ -70,7 +70,7 @@ namespace ReservedItemSlotCore.Patches
                         node.displayText = node.displayText.Insert(insertIndex, addText);
                     }
                     else
-                        Debug.LogError("Failed to add reserved item slots tip to terminal. Maybe an update broke it?");
+                        Plugin.LogError("Failed to add reserved item slots tip to terminal. Maybe an update broke it?");
                 }
 
                 else if (node.name == "HelpCommands" && !node.displayText.Contains(">RESERVED"))
@@ -156,17 +156,17 @@ namespace ReservedItemSlotCore.Patches
                 {
                     if (purchasingItemSlot.isUnlocked)
                     {
-                        Debug.LogWarning("Attempted to confirm purchase on reserved item slot that was already unlocked. Item slot: " + purchasingItemSlot.slotDisplayName);
+                        Plugin.LogWarning("Attempted to confirm purchase on reserved item slot that was already unlocked. Item slot: " + purchasingItemSlot.slotDisplayName);
                         __result = BuildTerminalNodeAlreadyUnlocked(purchasingItemSlot);
                     }
                     else if (terminalInstance.groupCredits < purchasingItemSlot.purchasePrice)
                     {
-                        Debug.LogWarning("Attempted to confirm purchase with insufficient credits. Current credits: " + terminalInstance.groupCredits + " Required credits: " + purchasingItemSlot.purchasePrice);
+                        Plugin.LogWarning("Attempted to confirm purchase with insufficient credits. Current credits: " + terminalInstance.groupCredits + " Required credits: " + purchasingItemSlot.purchasePrice);
                         __result = BuildTerminalNodeInsufficientFunds(purchasingItemSlot);
                     }
                     else
                     {
-                        Debug.Log("Purchasing reserved item slot: " + purchasingItemSlot.slotDisplayName + ". Price: " + purchasingItemSlot.purchasePrice);
+                        Plugin.Log("Purchasing reserved item slot: " + purchasingItemSlot.slotDisplayName + ". Price: " + purchasingItemSlot.purchasePrice);
                         terminalInstance.groupCredits -= purchasingItemSlot.purchasePrice;
                         terminalInstance.BuyItemsServerRpc(new int[0], terminalInstance.groupCredits, terminalInstance.numberOfItemsInDropship);
                         SyncManager.SendUnlockItemSlotUpdateToServer(purchasingItemSlot.slotId);

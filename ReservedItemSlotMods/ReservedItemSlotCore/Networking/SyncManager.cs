@@ -23,6 +23,7 @@ namespace ReservedItemSlotCore.Networking
         internal static bool canUseModDisabledOnHost { get { return ConfigSettings.forceEnableThisModIfNotEnabledOnHost.Value; } }
 
         public static bool isSynced { get; internal set; } = false;
+        public static bool hostHasMod { get; private set; } = false;
         private static bool requestedSyncHeldObjects = false;
 
         public static List<ReservedItemSlotData> unlockableReservedItemSlots = new List<ReservedItemSlotData>();
@@ -51,6 +52,7 @@ namespace ReservedItemSlotCore.Networking
         public static void ResetValues(StartOfRound __instance)
         {
             isSynced = false;
+            hostHasMod = false;
             requestedSyncHeldObjects = false;
             unlockableReservedItemSlots?.Clear();
             unlockableReservedItemSlotsDict?.Clear();
@@ -67,7 +69,6 @@ namespace ReservedItemSlotCore.Networking
             if (NetworkManager.Singleton.IsServer)
             {
                 enablePurchasingItemSlots = ConfigSettings.enablePurchasingItemSlots.Value;
-
                 //unlockableReservedItemSlotsDict = ReservedItemSlotData.allReservedItemSlotData; // reservedItemsDict;
                 //unlockableReservedItemSlots = unlockableReservedItemSlotsDict.Values.ToList();
 
@@ -99,6 +100,7 @@ namespace ReservedItemSlotCore.Networking
                 }
 
                 isSynced = true;
+                hostHasMod = true;
                 OnSyncedWithServer();
 
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.OnSwapHotbarServerRpc", OnSwapHotbarServerRpc);
@@ -109,8 +111,10 @@ namespace ReservedItemSlotCore.Networking
             else
             {
                 isSynced = false;
-                unlockableReservedItemSlotsDict = canUseModDisabledOnHost ? ReservedItemSlotData.allReservedItemSlotData : new Dictionary<string, ReservedItemSlotData>();
+                //unlockableReservedItemSlotsDict = canUseModDisabledOnHost ? new Dictionary<string, ReservedItemSlotData>(ReservedItemSlotData.allReservedItemSlotData) : new Dictionary<string, ReservedItemSlotData>();
+                unlockableReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
                 unlockableReservedItemSlots = unlockableReservedItemSlotsDict.Values.ToList();
+
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.OnSwapHotbarClientRpc", OnSwapHotbarClientRpc);
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.RequestSyncClientRpc", RequestSyncClientRpc);
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ReservedItemSlotCore.OnUnlockItemSlotClientRpc", OnUnlockItemSlotClientRpc);
@@ -123,7 +127,7 @@ namespace ReservedItemSlotCore.Networking
         }
 
 
-        public static void AddReservedItemSlotData(ReservedItemSlotData itemSlotData)
+        internal static void AddReservedItemSlotData(ReservedItemSlotData itemSlotData)
         {
             if (itemSlotData == null)
                 return;
@@ -136,7 +140,7 @@ namespace ReservedItemSlotCore.Networking
         }
 
 
-        public static void UpdateReservedItemsList()
+        internal static void UpdateReservedItemsList()
         {
             if (unlockableReservedItemSlots == null)
                 return;
@@ -161,7 +165,7 @@ namespace ReservedItemSlotCore.Networking
         }
 
 
-        static void RequestSyncFromServer()
+        private static void RequestSyncFromServer()
         {
             if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
                 return;
@@ -186,7 +190,7 @@ namespace ReservedItemSlotCore.Networking
         public static void SendSyncToAllClients() => SendSync(0, true);
 
 
-        static void SendSync(ulong clientId = 0, bool sendToAllClients = false)
+        private static void SendSync(ulong clientId = 0, bool sendToAllClients = false)
         {
             if (!NetworkManager.Singleton.IsServer)
                 return;
@@ -272,6 +276,7 @@ namespace ReservedItemSlotCore.Networking
             if (!NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer)
                 return;
 
+            hostHasMod = true;
             unlockableReservedItemSlots = new List<ReservedItemSlotData>();
             unlockableReservedItemSlotsDict = new Dictionary<string, ReservedItemSlotData>();
 
@@ -342,10 +347,13 @@ namespace ReservedItemSlotCore.Networking
         private static void OnSyncedWithServer()
         {
             isSynced = true;
-            foreach (var item in StartOfRound.Instance.allItemsList.itemsList)
+            if (hostHasMod)
             {
-                if (IsReservedItem(item.itemName))
-                    item.canBeGrabbedBeforeGameStart = true;
+                foreach (var item in StartOfRound.Instance.allItemsList.itemsList)
+                {
+                    if (IsReservedItem(item.itemName))
+                        item.canBeGrabbedBeforeGameStart = true;
+                }
             }
             localPlayerController.StartCoroutine(OnSyncedWithServerDelayed());
         }
@@ -361,7 +369,7 @@ namespace ReservedItemSlotCore.Networking
                 playerData.reservedHotbarStartIndex = playerData.hotbarSize;
             }
 
-            if (!NetworkManager.Singleton.IsServer)
+            if (!NetworkManager.Singleton.IsServer && hostHasMod)
                 RequestSyncHeldObjects();
             SessionManager.UnlockAllPendingItemSlots();
         }

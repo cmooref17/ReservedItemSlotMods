@@ -98,6 +98,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AmmoUI.cs" />
     <Compile Include="Config\ConfigSettings.cs" />
     <Compile Include="Input\IngameKeybinds.cs" />
     <Compile Include="Input\InputUtilsCompat.cs" />

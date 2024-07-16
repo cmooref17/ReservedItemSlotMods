@@ -24,8 +24,10 @@ namespace ReservedItemSlotCore.Config
         public static ConfigEntry<bool> showReservedItemsHolstered;
         public static ConfigEntry<bool> showReservedItemsHolsteredMaskedEnemy;
 
-        public static ConfigEntry<bool> applyHotbarPlusFormatting;
+        public static ConfigEntry<bool> applyHotbarPlusItemSlotSize;
         public static ConfigEntry<bool> disableHotbarPlusEnergyBars;
+
+        public static ConfigEntry<bool> verboseLogs;
 
         public static ConfigEntry<int> numCustomItemSlots;
         public static List<CustomItemSlotConfigEntry> customItemSlotConfigs = new List<CustomItemSlotConfigEntry>();
@@ -39,7 +41,7 @@ namespace ReservedItemSlotCore.Config
 
             enablePurchasingItemSlots = AddConfigEntry(Plugin.instance.Config.Bind("Server", "EnablePurchasingItemSlots", false, "[Host only] Set to true to enable purchasing reserved item slots. If set to false, all players will start the game with all available reserved item slots."));
             globalItemSlotPriceModifier = AddConfigEntry(Plugin.instance.Config.Bind("Server", "GlobalItemSlotPriceModifier", 1f, "[Host only] All reserved item slot prices will scale with this value."));
-            forceEnableThisModIfNotEnabledOnHost = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ForceEnableThisModIfNotEnabledOnHost", false, "If you are reading this, then this config option is temporarily disabled. This is disabled by default for a reason, and it is NOT recommended to enable this, especially in public lobbies. Enabling this when the host does not have the ReservedItemSlotCore mod CAN, and likely WILL cause de-sync issues. You have been warned. This setting only applies if you are a non-host client, and the host does not have this mod."));
+            forceEnableThisModIfNotEnabledOnHost = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ForceEnableThisModIfNotEnabledOnHost", false, "This is disabled by default for a reason, and it is NOT recommended to enable this, especially in public lobbies. Enabling this while the host does not have the ReservedItemSlotCore mod CAN, and likely WILL cause de-sync issues.\nNOTE: If enabled, you will not receive any reserved item slots until the game has started.\nThis setting only applies if you are a non-host client, and the host does not have this mod."));
             displayNegativePrioritySlotsLeftSideOfScreen = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "DisplayNegativePrioritySlotsLeftSideOfScreen", true, "For any reserved item slot mods that have a negative priority, by default, those slots will appear on the left side of the screen, rather than the right. Setting this option to false will have them appear on top of the slots on the right side."));
             hideEmptyReservedItemSlots = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "HideEmptyReservedItemSlots", false, "If true, all empty reserved item slots will be hidden from the HUD. This is a new config setting and might have bugs."));
             toggleFocusReservedHotbar = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ToggleFocusReservedHotbar", false, "If true, swapping to the reserved hotbar slots will be toggled when pressing the hotkey rather than while holding the hotkey. Setting this option to true may have bugs at this current time."));
@@ -50,10 +52,13 @@ namespace ReservedItemSlotCore.Config
             showReservedItemsHolstered = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ShowReservedItemsHolsteredOnPlayers", true, "If true, held items in the reserved item slots that are not currently in the player's hand, will be shown holstered on the player. Example: The reserved flashlight will show up on the player's shoulder when not in their hands. This will do nothing for items that do not have a defined holstered location on the player."));
             showReservedItemsHolsteredMaskedEnemy = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ShowReservedItemsHolsteredOnMaskedEnemies", true, "If true, masked enemies will appear to have reserved items holstered when mimicking a player. The items shown will be the same items that the player, who the masked enemy is mimicking, has in their inventory. This will do nothing for items that do not have a defined holstered location on the player."));
 
-            applyHotbarPlusFormatting = AddConfigEntry(Plugin.instance.Config.Bind("Compatibility", "ApplyHudFormattingFromHotbarPlus", false, "If true, the item slots in the HUD will apply the same formatting changes as HotbarPlus. (icon size, spacing, alpha, etc)\nThis will not do anything if HotbarPlus is not enabled."));
+            applyHotbarPlusItemSlotSize = AddConfigEntry(Plugin.instance.Config.Bind("Compatibility", "ApplyHotbarPlusItemSlotSize", true, "If true, the reserved item slot SIZE will be a adjusted by HotbarPlus's formatting settings.\nThis will not do anything if HotbarPlus is not enabled."));
             disableHotbarPlusEnergyBars = AddConfigEntry(Plugin.instance.Config.Bind("Compatibility", "DisableHotbarPlusEnergyBars", false, "Disables/hides the energy bars from HotbarPlus from the reserved item slots (HUD).\nThis will not do anything if HotbarPlus is not enabled."));
 
             numCustomItemSlots = AddConfigEntry(Plugin.instance.Config.Bind("Custom Reserved Item Slots", "NumCustomItemSlots", 0, "[Host only] Set the number of custom reserved item slots you want to add. Custom slots will update in the config when you start the game. LIMITED TO 10"));
+
+            verboseLogs = AddConfigEntry(Plugin.instance.Config.Bind("Other", "VerboseLogs", true, "If enabled, extra logs will be created for debugging. This may be useful for tracking down various issues."));
+
             numCustomItemSlots.Value = Mathf.Clamp(numCustomItemSlots.Value, 0, 10);
 
             for (int i = 0; i < numCustomItemSlots.Value; i++)

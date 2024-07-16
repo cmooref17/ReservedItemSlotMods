@@ -1,22 +1,12 @@
 ﻿using System.Collections.Generic;
 using BepInEx;
 using HarmonyLib;
-using ReservedItemSlotCore.Patches;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 using System;
-using System.Security.Cryptography;
-using System.IO;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Runtime.InteropServices.ComTypes;
 using ReservedItemSlotCore.Config;
 using ReservedItemSlotCore.Input;
 using BepInEx.Logging;
 using System.Reflection;
-using System.Collections;
 using System.Linq;
-using System.Runtime.InteropServices;
 using ReservedItemSlotCore.Data;
 
 namespace ReservedItemSlotCore
@@ -61,8 +51,8 @@ namespace ReservedItemSlotCore
                 {
                     var customItemData = new ReservedItemData(itemName);
                     customItemSlot.AddItemToReservedItemSlot(customItemData);
-                    customItemSlots.Add(customItemSlot);
                 }
+                customItemSlots.Add(customItemSlot);
             }
         }
 

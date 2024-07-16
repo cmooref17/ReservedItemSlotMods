@@ -35,7 +35,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(StartOfRound), "Awake")]
         [HarmonyPrefix]
-        public static void InitSession(StartOfRound __instance)
+        private static void InitSession(StartOfRound __instance)
         {
             initialized = false;
             vanillaHotbarSize = 4;
@@ -45,7 +45,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), "Awake")]
         [HarmonyPostfix]
-        public static void InitializePlayerController(PlayerControllerB __instance)
+        private static void InitializePlayerController(PlayerControllerB __instance)
         {
             if (!initialized)
             {
@@ -58,7 +58,7 @@ namespace ReservedItemSlotCore.Patches
         
         [HarmonyPatch(typeof(PlayerControllerB), "Start")]
         [HarmonyPrefix]
-        public static void InitializePlayerControllerLate(PlayerControllerB __instance)
+        private static void InitializePlayerControllerLate(PlayerControllerB __instance)
         {
             var playerData = new ReservedPlayerData(__instance);
             if (!allPlayerData.ContainsKey(__instance))
@@ -71,7 +71,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), "LateUpdate")]
         [HarmonyPostfix]
-        public static void CheckForChangedInventorySize(PlayerControllerB __instance)
+        private static void CheckForChangedInventorySize(PlayerControllerB __instance)
         {
             if (!SyncManager.isSynced)
                 return;
@@ -141,7 +141,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), "BeginGrabObject")]
         [HarmonyPrefix]
-        public static bool BeginGrabReservedItemPrefix(PlayerControllerB __instance)
+        private static bool BeginGrabReservedItemPrefix(PlayerControllerB __instance)
         {
             if ((!SyncManager.isSynced && !SyncManager.canUseModDisabledOnHost) || !HUDPatcher.hasReservedItemSlotsAndEnabled)
                 return true;
@@ -185,7 +185,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), "BeginGrabObject")]
         [HarmonyPostfix]
-        public static void BeginGrabReservedItemPostfix(PlayerControllerB __instance)
+        private static void BeginGrabReservedItemPostfix(PlayerControllerB __instance)
         {
             // Fix some animations (or prevent swapping item animations)
             if (localPlayerData != null && localPlayerData.isGrabbingReservedItem && !localPlayerData.IsReservedItemSlot(localPlayerData.previousHotbarIndex))
@@ -206,7 +206,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), "GrabObjectClientRpc")]
         [HarmonyPrefix]
-        public static void GrabReservedItemClientRpcPrefix(bool grabValidated, NetworkObjectReference grabbedObject, PlayerControllerB __instance)
+        private static void GrabReservedItemClientRpcPrefix(bool grabValidated, NetworkObjectReference grabbedObject, PlayerControllerB __instance)
         {
             if ((!SyncManager.isSynced && !SyncManager.canUseModDisabledOnHost) || !NetworkHelper.IsClientExecStage(__instance))
                 return;
@@ -241,7 +241,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), "GrabObjectClientRpc")]
         [HarmonyPostfix]
-        public static void GrabReservedItemClientRpcPostfix(bool grabValidated, NetworkObjectReference grabbedObject, PlayerControllerB __instance)
+        private static void GrabReservedItemClientRpcPostfix(bool grabValidated, NetworkObjectReference grabbedObject, PlayerControllerB __instance)
         {
             if ((!SyncManager.isSynced && !SyncManager.canUseModDisabledOnHost) || !NetworkHelper.IsClientExecStage(__instance))
                 return;
@@ -325,7 +325,7 @@ namespace ReservedItemSlotCore.Patches
 
         [HarmonyPatch(typeof(GrabbableObject), "GrabItemOnClient")]
         [HarmonyPrefix]
-        public static void OnReservedItemGrabbed(GrabbableObject __instance)
+        private static void OnReservedItemGrabbed(GrabbableObject __instance)
         {
             IEnumerator OnReservedItemGrabbedEndOfFrame()
             {
