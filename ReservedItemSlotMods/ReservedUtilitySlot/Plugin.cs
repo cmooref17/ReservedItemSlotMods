@@ -145,7 +145,7 @@ namespace ReservedUtilitySlot
             
             if (ConfigSettings.addKeySlot.Value)
             {
-                ReservedItemSlotData keySlotData = ReservedItemSlotData.CreateReservedItemSlotData("key_slot", ConfigSettings.overrideKeySlotPriority.Value, ConfigSettings.overrideKeySlotPrice.Value);
+                keySlotData = ReservedItemSlotData.CreateReservedItemSlotData("key_slot", ConfigSettings.overrideKeySlotPriority.Value, ConfigSettings.overrideKeySlotPrice.Value);
                 keyData = keySlotData.AddItemToReservedItemSlot(new ReservedItemData("Key"));
 
                 if (ConfigSettings.moveLockpickerToKeySlot.Value)
