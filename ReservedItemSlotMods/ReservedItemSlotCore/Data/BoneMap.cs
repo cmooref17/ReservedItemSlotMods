@@ -48,10 +48,10 @@ namespace ReservedItemSlotCore.Data
         {
             "spine", "spine.001", "spine.002", "spine.003",
             "spine.004", "spine.004", // neck, head
-            "shoulder.L", "armUpper.L", "armLower.L", "hand.L",
-            "shoulder.R", "armUpper.R", "armLower.R", "hand.R",
-            "thigh.L", "calf.L", "foot.L", "heel.02.L", "toe.L",
-            "thigh.R", "calf.R", "foot.R", "heel.02.R", "toe.R"
+            "shoulder.L", "arm.L_upper", "arm.L_lower", "hand.L",
+            "shoulder.R", "arm.R_upper", "arm.R_lower", "hand.R",
+            "thigh.L", "shin.L", "foot.L", "heel.02.L", "toe.L",
+            "thigh.R", "shin.R", "foot.R", "heel.02.R", "toe.R"
         };
 
         public List<string> boneNames;
@@ -76,9 +76,14 @@ namespace ReservedItemSlotCore.Data
 
         private void MapBoneRecursive(Transform bone)
         {
-            int boneIndex = boneNames.IndexOf(bone.name);
+            IEnumerable<int> indices = boneNames
+                .Select((name, index) => bone.name == name ? index : -1);
+
+            foreach ( int boneIndex in indices )
+            {
             if (boneIndex >= 0 && boneIndex < boneArray.Length && boneArray[boneIndex] == null)
                 boneArray[boneIndex] = bone;
+			}
 
             for (int i = 0; i < bone.childCount; i++)
                 MapBoneRecursive(bone.GetChild(i));
