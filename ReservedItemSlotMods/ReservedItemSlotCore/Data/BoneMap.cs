@@ -76,9 +76,14 @@ namespace ReservedItemSlotCore.Data
 
         private void MapBoneRecursive(Transform bone)
         {
-            int boneIndex = boneNames.IndexOf(bone.name);
+            IEnumerable<int> indices = boneNames
+                .Select((name, index) => bone.name == name ? index : -1);
+
+            foreach ( int boneIndex in indices )
+            {
             if (boneIndex >= 0 && boneIndex < boneArray.Length && boneArray[boneIndex] == null)
                 boneArray[boneIndex] = bone;
+			}
 
             for (int i = 0; i < bone.childCount; i++)
                 MapBoneRecursive(bone.GetChild(i));
