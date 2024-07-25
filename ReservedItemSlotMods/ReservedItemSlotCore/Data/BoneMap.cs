@@ -81,8 +81,8 @@ namespace ReservedItemSlotCore.Data
 
             foreach ( int boneIndex in indices )
             {
-            if (boneIndex >= 0 && boneIndex < boneArray.Length && boneArray[boneIndex] == null)
-                boneArray[boneIndex] = bone;
+                if (boneIndex >= 0 && boneIndex < boneArray.Length && boneArray[boneIndex] == null)
+                    boneArray[boneIndex] = bone;
 			}
 
             for (int i = 0; i < bone.childCount; i++)

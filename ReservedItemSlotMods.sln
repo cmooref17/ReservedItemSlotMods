@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34322.80
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservedItemSlotCore", "ReservedItemSlotMods\ReservedItemSlotCore\ReservedItemSlotCore.csproj", "{EEBE2018-C69A-456D-81D4-EEEDED33E4C2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservedFlashlightSlot", "ReservedItemSlotMods\ReservedFlashlightSlot\ReservedFlashlightSlot.csproj", "{872ABD34-67AE-406E-BE49-172D4D463470}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservedSprayPaintSlot", "ReservedItemSlotMods\ReservedSprayPaintSlot\ReservedSprayPaintSlot.csproj", "{5EAFC5E2-54C9-4370-B905-F45C087D8816}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservedUtilitySlot", "ReservedItemSlotMods\ReservedUtilitySlot\ReservedUtilitySlot.csproj", "{4F01B77D-BEDD-4E16-8C84-0FE8A214F7E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservedWalkieSlot", "ReservedItemSlotMods\ReservedWalkieSlot\ReservedWalkieSlot.csproj", "{2EE884B5-DF4A-4DE6-9C64-47A2F13CDD7E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservedWeaponSlot", "ReservedItemSlotMods\ReservedWeaponSlot\ReservedWeaponSlot.csproj", "{49F7F7FC-9089-43AF-AF8F-9EAC4949B1E4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EEBE2018-C69A-456D-81D4-EEEDED33E4C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEBE2018-C69A-456D-81D4-EEEDED33E4C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEBE2018-C69A-456D-81D4-EEEDED33E4C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEBE2018-C69A-456D-81D4-EEEDED33E4C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{872ABD34-67AE-406E-BE49-172D4D463470}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{872ABD34-67AE-406E-BE49-172D4D463470}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{872ABD34-67AE-406E-BE49-172D4D463470}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{872ABD34-67AE-406E-BE49-172D4D463470}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5EAFC5E2-54C9-4370-B905-F45C087D8816}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5EAFC5E2-54C9-4370-B905-F45C087D8816}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5EAFC5E2-54C9-4370-B905-F45C087D8816}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5EAFC5E2-54C9-4370-B905-F45C087D8816}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F01B77D-BEDD-4E16-8C84-0FE8A214F7E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F01B77D-BEDD-4E16-8C84-0FE8A214F7E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F01B77D-BEDD-4E16-8C84-0FE8A214F7E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F01B77D-BEDD-4E16-8C84-0FE8A214F7E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EE884B5-DF4A-4DE6-9C64-47A2F13CDD7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EE884B5-DF4A-4DE6-9C64-47A2F13CDD7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EE884B5-DF4A-4DE6-9C64-47A2F13CDD7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EE884B5-DF4A-4DE6-9C64-47A2F13CDD7E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49F7F7FC-9089-43AF-AF8F-9EAC4949B1E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49F7F7FC-9089-43AF-AF8F-9EAC4949B1E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49F7F7FC-9089-43AF-AF8F-9EAC4949B1E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49F7F7FC-9089-43AF-AF8F-9EAC4949B1E4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3F3C0AF7-445C-4D71-B74A-1E37F71FB0AE}
+	EndGlobalSection
+EndGlobal
