@@ -27,7 +27,7 @@ namespace ReservedItemSlotCore
         public static int indexInHotbar = 0; // Used to determine which item slot to swap to when swapping from the reserved hotbar, to the main hotbar.
         public static int indexInReservedHotbar = 0; // Used to determine which item slot to swap to when swapping from the main hotbar, to the reserved hotbar.
 
-        public static bool isToggledInReservedSlots { get { var currentlySelectedReservedItemSlot = localPlayerData.GetCurrentlySelectedReservedItemSlot(); return ConfigSettings.toggleFocusReservedHotbar.Value || (currentlyToggledItemSlots != null && currentlySelectedReservedItemSlot != null && currentlyToggledItemSlots.Contains(currentlySelectedReservedItemSlot)); } }
+        public static bool isToggledInReservedSlots { get { var currentlySelectedReservedItemSlot = localPlayerData.GetCurrentlySelectedReservedItemSlot(); return (ReservedPlayerData.localPlayerData.inReservedHotbarSlots && Keybinds.pressedToggleKey) || (currentlyToggledItemSlots != null && currentlySelectedReservedItemSlot != null && currentlyToggledItemSlots.Contains(currentlySelectedReservedItemSlot)); } }
 
         // Internal list to help track which item slots are currently toggled. These are for cases where a specific item slot is toggled, such as when pressing a hotkey to swap to the reserved weapon slot.
         internal static List<ReservedItemSlotData> currentlyToggledItemSlots = new List<ReservedItemSlotData>();
@@ -223,7 +223,7 @@ namespace ReservedItemSlotCore
         {
             if (!HUDPatcher.hasReservedItemSlotsAndEnabled)
                 return;
-            if (__instance != localPlayerController || ConfigSettings.toggleFocusReservedHotbar.Value || Keybinds.holdingModifierKey == ReservedPlayerData.localPlayerData.currentItemSlotIsReserved || ReservedHotbarManager.isToggledInReservedSlots)
+            if (__instance != localPlayerController || Keybinds.pressedToggleKey || Keybinds.holdingModifierKey == ReservedPlayerData.localPlayerData.currentItemSlotIsReserved || ReservedHotbarManager.isToggledInReservedSlots)
                 return;
 
             if (CanSwapHotbars())
@@ -240,7 +240,7 @@ namespace ReservedItemSlotCore
             if (__instance != localPlayerController)
                 return;
 
-            if (!specialAnimation && !ConfigSettings.toggleFocusReservedHotbar.Value && ReservedPlayerData.localPlayerData.currentItemSlotIsReserved != Keybinds.holdingModifierKey)
+            if (!specialAnimation && !Keybinds.pressedToggleKey && ReservedPlayerData.localPlayerData.currentItemSlotIsReserved != Keybinds.holdingModifierKey)
                 FocusReservedHotbarSlots(Keybinds.holdingModifierKey);
         }
     }

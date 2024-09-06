@@ -53,7 +53,8 @@ namespace ReservedFlashlightSlot
 
             flashlightData = flashlightSlotData.AddItemToReservedItemSlot(new ReservedItemData("Flashlight", PlayerBone.Spine3, new Vector3(0.2f, 0.25f, 0), new Vector3(90, 0, 0)));
             proFlashlightData = flashlightSlotData.AddItemToReservedItemSlot(new ReservedItemData("Pro-flashlight", PlayerBone.Spine3, new Vector3(0.2f, 0.25f, 0), new Vector3(90, 0, 0)));
-            laserPointerData = flashlightSlotData.AddItemToReservedItemSlot(new ReservedItemData("Laser pointer", PlayerBone.Spine3, new Vector3(0.2f, 0.25f, 0), new Vector3(90, 0, 0)));
+            if (ConfigSettings.includeLaserPointer.Value)
+                laserPointerData = flashlightSlotData.AddItemToReservedItemSlot(new ReservedItemData("Laser pointer", PlayerBone.Spine3, new Vector3(0.2f, 0.25f, 0), new Vector3(90, 0, 0)));
         }
 
         
@@ -85,7 +86,7 @@ namespace ReservedFlashlightSlot
 
         void CreateCustomLogger()
         {
-            try { logger = BepInEx.Logging.Logger.CreateLogSource(string.Format("{0}-{1}", Info.Metadata.Name, Info.Metadata.Version)); }
+            try { logger = BepInEx.Logging.Logger.CreateLogSource(string.Format("{0}-{1}", PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)); }
             catch { logger = Logger; }
         }
 

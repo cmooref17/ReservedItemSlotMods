@@ -17,9 +17,6 @@ namespace ReservedItemSlotCore.Input
         public static string[] keyboardKeywords = new string[] { "keyboard", "mouse" };
         public static string[] controllerKeywords = new string[] { "gamepad", "controller" };
 
-
-
-
         [HarmonyPatch(typeof(HUDManager), "Update")]
         [HarmonyPostfix]
         public static void CheckForInputSourceUpdate()
@@ -70,12 +67,12 @@ namespace ReservedItemSlotCore.Input
             if (displayName.Contains("not-bound"))
                 return "";
 
-            displayName = displayName.Replace("leftalt", "Alt");
-            displayName = displayName.Replace("rightalt", "Alt");
-            displayName = displayName.Replace("leftctrl", "Ctrl");
-            displayName = displayName.Replace("rightctrl", "Ctrl");
-            displayName = displayName.Replace("leftshift", "Shift");
-            displayName = displayName.Replace("rightshift", "Shift");
+            displayName = displayName.Replace("leftalt", "L-Alt");
+            displayName = displayName.Replace("rightalt", "R-Alt");
+            displayName = displayName.Replace("leftctrl", "L-Ctrl");
+            displayName = displayName.Replace("rightctrl", "R-Ctrl");
+            displayName = displayName.Replace("leftshift", "L-Shift");
+            displayName = displayName.Replace("rightshift", "R-Shift");
             displayName = displayName.Replace("leftbutton", "LMB");
             displayName = displayName.Replace("rightbutton", "RMB");
             displayName = displayName.Replace("middlebutton", "MMB");

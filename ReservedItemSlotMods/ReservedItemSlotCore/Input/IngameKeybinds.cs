@@ -17,5 +17,8 @@ namespace ReservedItemSlotCore.Input
 
         [InputAction("<Keyboard>/leftAlt", GamepadPath = "<Gamepad>/leftShoulder", Name = "Swap hotbars")]
         internal InputAction FocusReservedHotbarHotkey { get; set; }
+
+        [InputAction("<Keyboard>/rightAlt", GamepadPath = "", Name = "Toggle Swap hotbars")]
+        internal InputAction ToggleFocusReservedHotbarHotkey { get; set; }
     }
 }

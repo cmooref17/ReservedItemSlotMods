@@ -16,7 +16,7 @@ namespace ReservedItemSlotCore.Config
         public static ConfigEntry<bool> displayNegativePrioritySlotsLeftSideOfScreen;
         public static ConfigEntry<bool> hideEmptyReservedItemSlots;
         //public static ConfigEntry<string> focusReservedHotbarHotkey;
-        public static ConfigEntry<bool> toggleFocusReservedHotbar;
+        //public static ConfigEntry<bool> toggleFocusReservedHotbar;
         //public static ConfigEntry<bool> allowScrollingBetweenHotbars;
         public static ConfigEntry<bool> preventReservedItemSlotFade;
         public static ConfigEntry<bool> hideFocusHotbarTooltip;
@@ -44,7 +44,7 @@ namespace ReservedItemSlotCore.Config
             forceEnableThisModIfNotEnabledOnHost = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ForceEnableThisModIfNotEnabledOnHost", false, "This is disabled by default for a reason, and it is NOT recommended to enable this, especially in public lobbies. Enabling this while the host does not have the ReservedItemSlotCore mod CAN, and likely WILL cause de-sync issues.\nNOTE: If enabled, you will not receive any reserved item slots until the game has started.\nThis setting only applies if you are a non-host client, and the host does not have this mod."));
             displayNegativePrioritySlotsLeftSideOfScreen = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "DisplayNegativePrioritySlotsLeftSideOfScreen", true, "For any reserved item slot mods that have a negative priority, by default, those slots will appear on the left side of the screen, rather than the right. Setting this option to false will have them appear on top of the slots on the right side."));
             hideEmptyReservedItemSlots = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "HideEmptyReservedItemSlots", false, "If true, all empty reserved item slots will be hidden from the HUD. This is a new config setting and might have bugs."));
-            toggleFocusReservedHotbar = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ToggleFocusReservedHotbar", false, "If true, swapping to the reserved hotbar slots will be toggled when pressing the hotkey rather than while holding the hotkey. Setting this option to true may have bugs at this current time."));
+            //toggleFocusReservedHotbar = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "ToggleFocusReservedHotbar", false, "If true, swapping to the reserved hotbar slots will be toggled when pressing the hotkey rather than while holding the hotkey.\nNOTE: This option only applies if you are NOT using the InputUtils mod."));
             //allowScrollingBetweenHotbars = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "AllowScrollingBetweenHotbars", false, "If true, you will be able to scroll between the default and reserved hotbars.\nThis will disable the hotkey for swapping between the two hotbars.\nNOTE: This will also disable fixing the scroll direction in the reserved hotbars to match the direction you scroll."));
             preventReservedItemSlotFade = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "PreventReservedHotbarSlotFade", false, "If true, the reserved hotbar slots will not fade with the rest of the default slots. Currently, the reserved hotbar slots will never fade while you're in the slots."));
             hideFocusHotbarTooltip = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "HideFocusHotbarTooltip", false, "This tooltip is shown next to the first reserved item slot."));

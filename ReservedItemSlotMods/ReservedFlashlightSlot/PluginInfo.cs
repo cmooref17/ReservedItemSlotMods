@@ -6,6 +6,6 @@ namespace ReservedFlashlightSlot
 	{
 		public const string PLUGIN_GUID = "FlipMods.ReservedFlashlightSlot";
 		public const string PLUGIN_NAME = "ReservedFlashlightSlot";
-		public const string PLUGIN_VERSION = "2.0.5";
+		public const string PLUGIN_VERSION = "2.0.8";
 	}
 }

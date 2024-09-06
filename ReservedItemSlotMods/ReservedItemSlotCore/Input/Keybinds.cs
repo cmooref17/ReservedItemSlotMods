@@ -23,9 +23,11 @@ namespace ReservedItemSlotCore.Input
 		public static InputActionMap ActionMap;
 
 		public static InputAction FocusReservedHotbarAction;
+		public static InputAction ToggleFocusReservedHotbarAction;
 		public static InputAction RawScrollAction;
 
 		public static bool holdingModifierKey = false;
+		public static bool pressedToggleKey = false;
 		public static bool scrollingReservedHotbar = false;
 
 
@@ -37,6 +39,7 @@ namespace ReservedItemSlotCore.Input
             {
                 Asset = InputUtilsCompat.Asset;
                 FocusReservedHotbarAction = InputUtilsCompat.FocusReservedHotbarHotkey;
+                ToggleFocusReservedHotbarAction = InputUtilsCompat.ToggleFocusReservedHotbarHotkey;
             }
             else
             {
@@ -46,6 +49,9 @@ namespace ReservedItemSlotCore.Input
 
                 FocusReservedHotbarAction = ActionMap.AddAction("ReservedItemSlots.FocusReservedHotbar", binding: "<Keyboard>/leftAlt");
                 FocusReservedHotbarAction.AddBinding("<Gamepad>/leftShoulder");
+
+                ToggleFocusReservedHotbarAction = ActionMap.AddAction("ReservedItemSlots.ToggleFocusReservedHotbar", binding: "<Keyboard>/rightAlt");
+                ToggleFocusReservedHotbarAction.AddBinding("<Gamepad>/leftShoulder");
             }
 
             RawScrollAction = new InputAction("ReservedItemSlots.RawScroll", binding: "<Mouse>/scroll/y");
@@ -62,8 +68,9 @@ namespace ReservedItemSlotCore.Input
 			RawScrollAction.Enable();
 
             FocusReservedHotbarAction.performed += FocusReservedHotbarSlotsAction;
-			if (!ConfigSettings.toggleFocusReservedHotbar.Value)
-				FocusReservedHotbarAction.canceled += UnfocusReservedHotbarSlotsPerformed;
+			FocusReservedHotbarAction.canceled += UnfocusReservedHotbarSlotsPerformed;
+            ToggleFocusReservedHotbarAction.performed += ToggleFocusReservedHotbarSlotsAction;
+
 			RawScrollAction.performed += OnScrollReservedHotbar;
 		}
 
@@ -76,8 +83,9 @@ namespace ReservedItemSlotCore.Input
             RawScrollAction.Disable();
 
             FocusReservedHotbarAction.performed -= FocusReservedHotbarSlotsAction;
-            if (!ConfigSettings.toggleFocusReservedHotbar.Value)
-                FocusReservedHotbarAction.canceled -= UnfocusReservedHotbarSlotsPerformed;
+            FocusReservedHotbarAction.canceled -= UnfocusReservedHotbarSlotsPerformed;
+            ToggleFocusReservedHotbarAction.performed -= ToggleFocusReservedHotbarSlotsAction;
+
 			RawScrollAction.performed -= OnScrollReservedHotbar;
 		}
 
@@ -85,26 +93,23 @@ namespace ReservedItemSlotCore.Input
         private static void FocusReservedHotbarSlotsAction(InputAction.CallbackContext context)
 		{
             if (localPlayerController == null || !localPlayerController.IsOwner || !localPlayerController.isPlayerControlled || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
-				return;
-			if (SessionManager.numReservedItemSlotsUnlocked <= 0 || !HUDPatcher.hasReservedItemSlotsAndEnabled)
-				return;
-			if (ReservedPlayerData.localPlayerData.GetNumHeldReservedItems() <= 0 && ConfigSettings.hideEmptyReservedItemSlots.Value)
+                return;
+            // If the player has no unlocked reserved item slots
+            if (SessionManager.numReservedItemSlotsUnlocked <= 0 || !HUDPatcher.hasReservedItemSlotsAndEnabled)
+                return;
+            // If the player has no held reserved item slots
+            if (ReservedPlayerData.localPlayerData.GetNumHeldReservedItems() <= 0 && ConfigSettings.hideEmptyReservedItemSlots.Value)
 			{
 				if (ReservedPlayerData.localPlayerData.currentItemSlotIsReserved)
                     ReservedHotbarManager.FocusReservedHotbarSlots(false);
 				return;
 			}
 
-            if (!ConfigSettings.toggleFocusReservedHotbar.Value)
-				holdingModifierKey = true;
+            holdingModifierKey = true;
+			pressedToggleKey = false;
 
-            if (!context.performed || !ReservedHotbarManager.CanSwapHotbars())
-                return;
-
-            if (!ConfigSettings.toggleFocusReservedHotbar.Value)
-				ReservedHotbarManager.FocusReservedHotbarSlots(true);
-			else
-                ReservedHotbarManager.FocusReservedHotbarSlots(!ReservedPlayerData.localPlayerData.currentItemSlotIsReserved);
+            if (context.performed && ReservedHotbarManager.CanSwapHotbars())
+			    ReservedHotbarManager.FocusReservedHotbarSlots(true);
 		}
 
 
@@ -112,16 +117,48 @@ namespace ReservedItemSlotCore.Input
 		{
 			if (localPlayerController == null || !localPlayerController.IsOwner || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
 				return;
-			holdingModifierKey = false;
-			
-			if (!context.canceled || !ReservedHotbarManager.CanSwapHotbars())
-				return;
 
-            ReservedHotbarManager.FocusReservedHotbarSlots(false);
+			holdingModifierKey = false;
+            pressedToggleKey = false;
+
+
+            if (context.performed && ReservedHotbarManager.CanSwapHotbars())
+			    ReservedHotbarManager.FocusReservedHotbarSlots(false);
 		}
 
 
-		private static void OnScrollReservedHotbar(InputAction.CallbackContext context)
+        private static void ToggleFocusReservedHotbarSlotsAction(InputAction.CallbackContext context)
+        {
+            if (localPlayerController == null || !localPlayerController.IsOwner || !localPlayerController.isPlayerControlled || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
+                return;
+			// Don't toggle if we're currently holding to focus
+			if (ReservedPlayerData.localPlayerData.currentItemSlotIsReserved && holdingModifierKey)
+				return;
+			// If the player has no unlocked reserved item slots
+            if (SessionManager.numReservedItemSlotsUnlocked <= 0 || !HUDPatcher.hasReservedItemSlotsAndEnabled)
+                return;
+			// If the player has no held reserved item slots
+            if (ReservedPlayerData.localPlayerData.GetNumHeldReservedItems() <= 0 && ConfigSettings.hideEmptyReservedItemSlots.Value)
+            {
+                if (ReservedPlayerData.localPlayerData.currentItemSlotIsReserved)
+                    ReservedHotbarManager.FocusReservedHotbarSlots(false);
+                return;
+            }
+
+			// If keybind is the same as hold to focus, return
+            int bindingIndex = StartOfRound.Instance.localPlayerUsingController ? 1 : 0;
+			if (FocusReservedHotbarAction.bindings[bindingIndex].effectivePath == ToggleFocusReservedHotbarAction.bindings[bindingIndex].effectivePath)
+				return;
+
+			holdingModifierKey = false;
+			pressedToggleKey = true;
+
+            if (context.performed && ReservedHotbarManager.CanSwapHotbars())
+                ReservedHotbarManager.FocusReservedHotbarSlots(!ReservedPlayerData.localPlayerData.currentItemSlotIsReserved);
+        }
+
+
+        private static void OnScrollReservedHotbar(InputAction.CallbackContext context)
 		{
 			if (localPlayerController == null || !localPlayerController.IsOwner || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
 				return;

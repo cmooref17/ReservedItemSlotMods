@@ -474,7 +474,7 @@ namespace ReservedItemSlotCore.Patches
             if (currentlyInReservedSlots)
             {
                 var resultReservedItemSlot = SessionManager.GetUnlockedReservedItemSlot(__result - playerData.reservedHotbarStartIndex);
-                if (ReservedHotbarManager.isToggledInReservedSlots && !ConfigSettings.toggleFocusReservedHotbar.Value && !Keybinds.holdingModifierKey && ReservedHotbarManager.currentlyToggledItemSlots != null && (!resultInReservedSlots || playerData.itemSlots[__result] == null || !ReservedHotbarManager.currentlyToggledItemSlots.Contains(resultReservedItemSlot)))
+                if (ReservedHotbarManager.isToggledInReservedSlots && !Keybinds.pressedToggleKey && !Keybinds.holdingModifierKey && ReservedHotbarManager.currentlyToggledItemSlots != null && (!resultInReservedSlots || playerData.itemSlots[__result] == null || !ReservedHotbarManager.currentlyToggledItemSlots.Contains(resultReservedItemSlot)))
                 {
                     __result = ReservedHotbarManager.indexInHotbar;
                     return;

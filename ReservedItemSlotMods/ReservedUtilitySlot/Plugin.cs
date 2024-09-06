@@ -225,7 +225,7 @@ namespace ReservedUtilitySlot
 
         private void CreateCustomLogger()
         {
-            try { logger = BepInEx.Logging.Logger.CreateLogSource(string.Format("{0}-{1}", Info.Metadata.Name, Info.Metadata.Version)); }
+            try { logger = BepInEx.Logging.Logger.CreateLogSource(string.Format("{0}-{1}", PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)); }
             catch { logger = Logger; }
         }
 

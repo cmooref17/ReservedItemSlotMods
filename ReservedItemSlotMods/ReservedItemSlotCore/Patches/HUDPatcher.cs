@@ -238,10 +238,10 @@ namespace ReservedItemSlotCore.Patches
                     tooltipTransform.localScale = Vector3.one;
                     tooltipTransform.sizeDelta = new Vector2(tooltipParent.sizeDelta.x * 2, 10);
                     tooltipTransform.pivot = Vector2.one / 2;
-                    tooltipTransform.anchoredPosition3D = new Vector3(0, -(tooltipTransform.sizeDelta.x / 2) * 1.2f, 0);
+                    tooltipTransform.anchoredPosition3D = new Vector3(0, -(tooltipTransform.sizeDelta.x / 2) - itemSlotWidth / 2 - 5f, 0);
                     hotkeyTooltip.font = HUDManager.Instance.controlTipLines[0].font;
                     hotkeyTooltip.fontSize = 7 * (tooltipParent.sizeDelta.x / defaultItemSlotSize.x);
-                    hotkeyTooltip.alignment = TextAlignmentOptions.Center;
+                    hotkeyTooltip.alignment = TextAlignmentOptions.MidlineRight;
                     UpdateHotkeyTooltipText();
                 }
                 else
@@ -259,8 +259,37 @@ namespace ReservedItemSlotCore.Patches
                 return;
 
             int bindingIndex = localPlayerUsingController ? 1 : 0;
-            string displayName = KeybindDisplayNames.GetKeybindDisplayName(Keybinds.FocusReservedHotbarAction.bindings[bindingIndex].effectivePath);
-            hotkeyTooltip.text = ConfigSettings.toggleFocusReservedHotbar.Value ? string.Format("Toggle: [{0}]", displayName) : string.Format("Hold: [{0}]", displayName);
+            string displayName = "";
+            string toggleDisplayName = "";
+
+            if (bindingIndex >= 0 && bindingIndex < Keybinds.FocusReservedHotbarAction.bindings.Count)
+            {
+                displayName = KeybindDisplayNames.GetKeybindDisplayName(Keybinds.FocusReservedHotbarAction.bindings[bindingIndex].effectivePath);
+            }
+            else
+            {
+                Plugin.LogError("Failed to update FocusReservedHotbar keybind tooltip. Using controller: " + localPlayerUsingController + " NumFocusReservedHotbarActionBindings: " + Keybinds.FocusReservedHotbarAction.bindings.Count);
+            }
+
+            if (bindingIndex >= 0 && bindingIndex < Keybinds.ToggleFocusReservedHotbarAction.bindings.Count)
+            {
+                toggleDisplayName = KeybindDisplayNames.GetKeybindDisplayName(Keybinds.ToggleFocusReservedHotbarAction.bindings[bindingIndex].effectivePath);
+            }
+            else
+            {
+                Plugin.LogError("Failed to update ToggleFocusReservedHotbar keybind tooltip. Using controller: " + localPlayerUsingController + " NumToggleFocusReservedHotbarActionBindings: " + Keybinds.ToggleFocusReservedHotbarAction.bindings.Count);
+            }
+
+            //hotkeyTooltip.text = ConfigSettings.toggleFocusReservedHotbar.Value ? string.Format("Toggle: [{0}]", displayName) : string.Format("Hold: [{0}]", displayName);
+            hotkeyTooltip.text = "";
+            if (displayName != "")
+                hotkeyTooltip.text = string.Format("Hold: [{0}]", displayName);
+            if (toggleDisplayName != "" && toggleDisplayName != displayName)
+            {
+                if (hotkeyTooltip.text != "")
+                    hotkeyTooltip.text += "\n";
+                hotkeyTooltip.text += string.Format("Toggle: [{0}]", toggleDisplayName);
+            }
         }
 
 

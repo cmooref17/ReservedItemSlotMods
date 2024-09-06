@@ -7,6 +7,8 @@ namespace ReservedItemSlotCore.Input
         internal static bool Enabled => Plugin.IsModLoaded("com.rune580.LethalCompanyInputUtils");
         internal static InputActionAsset Asset { get { return IngameKeybinds.Instance.Asset; } }
         public static InputAction FocusReservedHotbarHotkey => IngameKeybinds.Instance.FocusReservedHotbarHotkey;
+        public static InputAction ToggleFocusReservedHotbarHotkey => IngameKeybinds.Instance.ToggleFocusReservedHotbarHotkey;
+
         internal static void Init()
         {
             if (Enabled && IngameKeybinds.Instance == null)

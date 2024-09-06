@@ -17,7 +17,7 @@ using ReservedWalkieSlot.Config;
 
 namespace ReservedWalkieSlot
 {
-    [BepInPlugin("FlipMods.ReservedWalkieSlot", "ReservedWalkieSlot", "2.0.5")]
+    [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     [BepInDependency("FlipMods.ReservedItemSlotCore", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
@@ -41,9 +41,9 @@ namespace ReservedWalkieSlot
             CreateReservedItemSlots();
             CreateAdditionalReservedItemSlots();
 
-            _harmony = new Harmony("ReservedWalkieSlot");
+            _harmony = new Harmony(PluginInfo.PLUGIN_NAME);
             PatchAll();
-            Log("ReservedWalkieSlot loaded");
+            Log(PluginInfo.PLUGIN_NAME + " loaded");
         }
 
 
@@ -82,7 +82,7 @@ namespace ReservedWalkieSlot
 
         void CreateCustomLogger()
         {
-            try { logger = BepInEx.Logging.Logger.CreateLogSource(string.Format("{0}-{1}", Info.Metadata.Name, Info.Metadata.Version)); }
+            try { logger = BepInEx.Logging.Logger.CreateLogSource(string.Format("{0}-{1}", PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)); }
             catch { logger = Logger; }
         }
 

@@ -12,6 +12,7 @@ namespace ReservedFlashlightSlot.Config
         //public static ConfigEntry<bool> hideFlashlightMeshShoulder;
         public static ConfigEntry<int> overrideItemSlotPriority;
         public static ConfigEntry<int> overridePurchasePrice;
+        public static ConfigEntry<bool> includeLaserPointer;
         public static ConfigEntry<string> additionalItemsInSlot;
 
         public static Dictionary<string, ConfigEntryBase> currentConfigEntries = new Dictionary<string, ConfigEntryBase>();
@@ -23,6 +24,7 @@ namespace ReservedFlashlightSlot.Config
 
             //hideFlashlightMeshShoulder = AddConfigEntry(Plugin.instance.Config.Bind("Client-side", "HideFlashlightOnShoulder", false, "Hides the flashlight mesh while on your shoulder. Only applies in scenarios where you can view your player in third person."));
             overrideItemSlotPriority = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "FlashlightSlotPriorityOverride", 200, "[Host only] Manually set the priority for this item slot. Higher priority slots will come first in the reserved item slots, which will appear below the other slots. Negative priority items will appear on the left side of the screen, this is disabled in the core mod's config."));
+            includeLaserPointer = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "IncludeLaserPointer", false, "[Host only] If enabled, the laser pointer will be added to the reserved flashlight slot."));
             overridePurchasePrice = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "FlashlightSlotPriceOverride", 200, "[Host only] Manually set the price for this item in the store. Setting 0 will force this item to be unlocked immediately after the game starts."));
             additionalItemsInSlot = AddConfigEntry(Plugin.instance.Config.Bind("Server-side", "AdditionalItemsInSlot", "", "[Host only] Syntax: \"Item1,Item name2\" (without quotes). When adding items, use the item's name as it appears in game. Include spaces if there are spaces in the item name. Adding items that do not exist, or that are from a mod which is not enabled will not cause any problems.\nNOTE: IF YOU ARE USING A TRANSLATION MOD, YOU MAY NEED TO ADD THE TRANSLATED NAME OF ANY ITEM YOU WANT IN THIS SLOT."));
 

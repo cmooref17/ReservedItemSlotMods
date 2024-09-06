@@ -15,7 +15,7 @@ using ReservedSprayPaintSlot.Config;
 
 namespace ReservedSprayPaintSlot
 {
-    [BepInPlugin("FlipMods.ReservedSprayPaintSlot", "ReservedSprayPaintSlot", "1.1.1")]
+    [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     [BepInDependency("FlipMods.ReservedItemSlotCore", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
@@ -39,9 +39,9 @@ namespace ReservedSprayPaintSlot
             CreateReservedItemSlots();
             CreateAdditionalReservedItemSlots();
 
-            _harmony = new Harmony("ReservedSprayPaintSlot");
+            _harmony = new Harmony(PluginInfo.PLUGIN_NAME);
             PatchAll();
-            Log("ReservedSprayPaintSlot loaded");
+            Log(PluginInfo.PLUGIN_NAME + " loaded");
         }
 
 
@@ -80,7 +80,7 @@ namespace ReservedSprayPaintSlot
 
         void CreateCustomLogger()
         {
-            try { logger = BepInEx.Logging.Logger.CreateLogSource(string.Format("{0}-{1}", Info.Metadata.Name, Info.Metadata.Version)); }
+            try { logger = BepInEx.Logging.Logger.CreateLogSource(string.Format("{0}-{1}", PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)); }
             catch { logger = Logger; }
         }
 
