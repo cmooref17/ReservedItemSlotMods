@@ -28,7 +28,7 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPrefix]
         public static void CorrectReservedScrollDirectionNextItemSlot(ref bool forward)
         {
-            if (/*!ConfigSettings.allowScrollingBetweenHotbars.Value && */Keybinds.scrollingReservedHotbar)
+            if (Keybinds.scrollingReservedHotbar)
                 forward = Keybinds.RawScrollAction.ReadValue<float>() > 0;
         }
 
@@ -37,7 +37,7 @@ namespace ReservedItemSlotCore.Patches
         [HarmonyPrefix]
         public static void CorrectReservedScrollDirectionServerRpc(ref bool forward)
         {
-            if (/*!ConfigSettings.allowScrollingBetweenHotbars.Value && */Keybinds.scrollingReservedHotbar)
+            if (Keybinds.scrollingReservedHotbar)
                 forward = Keybinds.RawScrollAction.ReadValue<float>() > 0;
         }
 
@@ -53,7 +53,6 @@ namespace ReservedItemSlotCore.Patches
             {
                 if (!HUDPatcher.hasReservedItemSlotsAndEnabled)
                     return true;
-                //if (HUDPatcher.reservedItemSlots.Count > 0 && HUDPatcher.reservedItemSlots[1].rectTransform.anchoredPosition.y - HUDPatcher.reservedItemSlots[0].rectTransform.anchoredPosition.y <= 5) return true;
 
                 float time = Time.time;
                 if (!Keybinds.scrollingReservedHotbar)
@@ -61,10 +60,7 @@ namespace ReservedItemSlotCore.Patches
                 if (ReservedPlayerData.localPlayerData.GetNumHeldReservedItems() == 1 && ReservedPlayerData.localPlayerData.currentlySelectedItem != null && !ReservedHotbarManager.isToggledInReservedSlots)
                 {
                     if (ConfigSettings.verboseLogs.Value && time - timeLoggedPreventedScroll > 1)
-                    {
                         timeLoggedPreventedScroll = time;
-                        Plugin.LogWarning("[VERBOSE] Prevented item swap. Player is focused in reserved hotbar. Player is only holding one reserved item, and it's currently selected. This should be fine, unless these logs are spamming.");
-                    }
                     return false;
                 }
             }

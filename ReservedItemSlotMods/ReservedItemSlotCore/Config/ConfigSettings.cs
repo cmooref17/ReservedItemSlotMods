@@ -83,6 +83,7 @@ namespace ReservedItemSlotCore.Config
             if (itemNamesRaw == "")
                 return new string[0];
 
+            itemNamesRaw = itemNamesRaw.Replace(", ", ",");
             List<string> itemNames = new List<string>(itemNamesRaw.Split(','));
             itemNames = itemNames.Where(s => s.Length >= 1).ToList();
             return itemNames.ToArray();

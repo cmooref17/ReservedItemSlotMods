@@ -74,15 +74,17 @@ namespace ReservedItemSlotCore.Patches
         private static void CheckForChangedInventorySize(PlayerControllerB __instance)
         {
             if (!SyncManager.isSynced)
-                return;
+            {
+                if (!SyncManager.canUseModDisabledOnHost)
+                    return;
+            }
 
             if (!ReservedPlayerData.allPlayerData.TryGetValue(__instance, out var playerData))
                 return;
 
-            if (!SyncManager.canUseModDisabledOnHost || __instance != localPlayerController || reservedHotbarSize <= 0 || playerData.hotbarSize == __instance.ItemSlots.Length)
+            if (/*__instance != localPlayerController || */reservedHotbarSize <= 0 || playerData.hotbarSize == __instance.ItemSlots.Length)
                 return;
 
-            Plugin.LogWarning("On update inventory size for player: " + __instance.name + " - Old hotbar size: " + playerData.hotbarSize + " - New hotbar size: " + __instance.ItemSlots.Length);
             playerData.hotbarSize = __instance.ItemSlots.Length;
 
             int startIndex = -1;
@@ -105,6 +107,18 @@ namespace ReservedItemSlotCore.Patches
                             startIndex = newStartIndex;
                             Plugin.Log("OnUpdateInventorySize B for local player: " + __instance.name + " NewReservedItemsStartIndex: " + startIndex);
                             break;
+                        }
+                    }
+                }
+
+                // This seems to be the only reliable method for updating non-local players' inventories if items slots were inserted BEFORE the reserved item slots.
+                foreach (var playerScript in StartOfRound.Instance.allPlayerScripts)
+                {
+                    if (ReservedPlayerData.allPlayerData.TryGetValue(playerScript, out var checkPlayerData) && checkPlayerData != playerData)
+                    {
+                        if (reservedHotbarSize > 0 && checkPlayerData.hotbarSize != playerScript.ItemSlots.Length)
+                        {
+                            checkPlayerData.reservedHotbarStartIndex = startIndex;
                         }
                     }
                 }

@@ -83,7 +83,7 @@ namespace ReservedUtilitySlot
                 for (int i = 0; i < ConfigSettings.numUtilitySlots.Value; i++)
                 {
                     string slotName = "utility" + (i > 0 ? (i + 1).ToString() : "");
-                    var utilitySlotData = ReservedItemSlotData.CreateReservedItemSlotData(slotName, ConfigSettings.overrideItemSlotPriority.Value + i, Mathf.Max(ConfigSettings.overridePurchasePrice.Value + ConfigSettings.overrideExtraAmmoSlotPriceIncrease.Value * i, 0));
+                    var utilitySlotData = ReservedItemSlotData.CreateReservedItemSlotData(slotName, ConfigSettings.overrideItemSlotPriority.Value + i, Mathf.Max(ConfigSettings.overridePurchasePrice.Value + ConfigSettings.overrideExtraUtilitySlotPriceIncrease.Value * i, 0));
                     if (mainUtilitySlotData == null)
                         mainUtilitySlotData = utilitySlotData;
 

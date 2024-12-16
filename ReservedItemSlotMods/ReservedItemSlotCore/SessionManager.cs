@@ -13,6 +13,7 @@ using Unity.Netcode;
 using UnityEngine.Diagnostics;
 using GameNetcodeStuff;
 using ReservedItemSlotCore.Config;
+using System.Collections;
 
 namespace ReservedItemSlotCore
 {
@@ -217,11 +218,11 @@ namespace ReservedItemSlotCore
         private static void OnResetShip()
         {
             if (SyncManager.enablePurchasingItemSlots)
-                ResetProgress();
+                ResetProgressDelayed();
             else if (!SyncManager.hostHasMod && SyncManager.canUseModDisabledOnHost)
             {
                 SyncManager.isSynced = false;
-                ResetProgress(true);
+                ResetProgressDelayed(true);
             }
             gameStarted = false;
         }
@@ -292,7 +293,8 @@ namespace ReservedItemSlotCore
             {
                 if (playerData.playerController.currentItemSlot < 0 || playerData.playerController.currentItemSlot >= playerData.playerController.ItemSlots.Length)
                     PlayerPatcher.SwitchToItemSlot(playerData.playerController, 0);
-                playerData.reservedHotbarStartIndex = playerData.itemSlots.Length;
+                playerData.hotbarSize = playerData.itemSlots.Length;
+                playerData.reservedHotbarStartIndex = playerData.hotbarSize;
             }
             foreach (var reservedItemSlot in allUnlockableReservedItemSlots)
             {
@@ -307,6 +309,17 @@ namespace ReservedItemSlotCore
 
             if (NetworkManager.Singleton.IsServer)
                 ES3.DeleteKey("ReservedItemSlots.UnlockedItemSlots", GameNetworkManager.Instance.currentSaveFileName);
+        }
+
+
+        internal static void ResetProgressDelayed(bool force = false)
+        {
+            IEnumerator Reset()
+            {
+                yield return null;
+                ResetProgress(force);
+            }
+            StartOfRound.Instance.StartCoroutine(Reset());
         }
 
 

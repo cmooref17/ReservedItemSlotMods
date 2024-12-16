@@ -252,7 +252,7 @@ namespace ReservedItemSlotCore.Networking
                         writer.WriteValue(itemData.holsteredRotationOffset.y); // float
                         writer.WriteValue(itemData.holsteredRotationOffset.z); // float
                     }
-                    Plugin.LogWarning("Sending slot to client: " + itemSlotData.slotName + " Unlocked: " + itemSlotData.isUnlocked);
+                    Plugin.Log("Sending slot to client: " + itemSlotData.slotName + " Unlocked: " + itemSlotData.isUnlocked);
                     writer.WriteValue(itemSlotData.isUnlocked); // bool
                 }
             }

@@ -162,7 +162,7 @@ namespace ReservedItemSlotCore.Input
 		{
 			if (localPlayerController == null || !localPlayerController.IsOwner || (localPlayerController.IsServer && !localPlayerController.isHostPlayerObject))
 				return;
-			if (!context.performed || localPlayerController.inTerminalMenu || ReservedPlayerData.localPlayerData.throwingObject || scrollingReservedHotbar  || !ReservedPlayerData.localPlayerData.currentItemSlotIsReserved || ReservedPlayerData.localPlayerData.grabbingReservedItemData != null)
+			if (!context.performed || localPlayerController.inTerminalMenu || ReservedPlayerData.localPlayerData.throwingObject || scrollingReservedHotbar || !ReservedPlayerData.localPlayerData.currentItemSlotIsReserved || ReservedPlayerData.localPlayerData.grabbingReservedItemData != null)
 				return;
 
 			IEnumerator ResetScrollDelayed()

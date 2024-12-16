@@ -29,7 +29,7 @@ namespace ReservedItemSlotCore
             {
                 string originalItemName = item?.itemName;
 
-                if (originalItemName != null && originalItemName.Length > 0)
+                if (!string.IsNullOrEmpty(originalItemName))
                 {
                     if (!itemToNameMap.ContainsKey(item))
                         itemToNameMap.Add(item, originalItemName);
